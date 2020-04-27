@@ -1,0 +1,228 @@
+---
+title: "Advanced statistics for physics analysis - Exercise 2"
+author: "Matteo Bortoletto, matr. 1242935"
+date: "4/22/2020"
+output: html_document
+---
+
+## Exercise 0
+Practice with the discrete probability distributions in R: make plots of the standard pdfs and cdfs, playing with the function parameters.
+
+```{r}
+xn <- seq(-10,10,0.1)
+d_norm <- dnorm(xn,mean=0,sd=2)
+p_norm <- pnorm(xn,0,2)
+plot(xn, d_norm,
+     type = "l",
+     main = "pdf of the normal distribution",
+     xlab = "x")
+plot(xn, p_norm,
+     type = "l",
+     main = "cdf of the normal distribution",
+     xlab = "x")
+
+xp <- seq(0,30,1)
+d_pois <- dpois(xp,lambda = 10)
+p_pois <- ppois(xp,lambda = 10)
+barplot(d_pois,
+        main = "pdf of the Poisson distribution",
+        xlab = "x",
+        names = xp)
+barplot(p_pois,
+        main = "cdf of the Poisson distribution",
+        xlab = "x",
+        names = xp)
+
+xg <- seq(0,15,1)
+d_geom <- dgeom(xg,prob=0.3)
+p_geom <- pgeom(xg,prob=0.3)
+barplot(d_geom,
+        main = "pdf of the geometric distribution",
+        xlab = "x",
+        names = xg)
+barplot(p_geom,
+        main = "cdf of the geometric distribution",
+        xlab = "x",
+        names = xg)
+
+xe <- seq(0,100,1)
+d_exp <- dexp(xe,rate=0.2)
+p_exp <- pexp(xe,rate=0.2)
+plot(d_exp,
+     type = "l",
+     main = "pdf of the exponential distribution",
+     xlab = "x")
+plot(p_exp,
+     type = "l",
+     main = "cdf of the exponential distribution",
+     xlab = "x")
+
+xb <- seq(0,20,1)
+d_bin <- dbinom(xb,size=22,prob=0.3)
+p_bin <- pbinom(xb,size=22,prob=0.3)
+barplot(d_bin,
+        main = "pdf of the binomial distribution",
+        xlab = "x",
+        names = xb)
+barplot(p_bin,
+        main = "cdf of the binomial distribution",
+        xlab= "x",
+        names = xb)
+```
+
+## Exercise 1
+A set of measurements have been performed on the concentration of a contaminant in tap water. The table reports a set of values ($x$), with the corresponding probabilities given by the two methods ($p_1$ and $p_2$). Evaluate the expected values, $E[X]$, and the variance, $Var(X)$, for both methods.
+
+```{r}
+x <- c(15.58, 15.9, 16, 16.1, 16.2)
+p1 <- c(0.15, 0.21, 0.35, 0.15, 0.14)
+p2 <- c(0.14, 0.05, 0.64, 0.08, 0.09)
+df <- data.frame(x, p1, p2)
+m1 <- sum(df[,1]*df[2])
+m2 <- sum(df[,1]*df[3])
+v1 <- sum(df[,1]**2*df[,2]) - m1**2
+v2 <- sum(df[,1]**2*df[,3]) - m2**2
+cat(paste("Method 1. E[X] =", m1, "Var(X) =", v1, "\n"))
+cat(paste("Method 2. E[X] =", m2, "Var(X) =", v2))
+```
+
+## Exercise 2
+The waiting time, in minutes, at the doctor’s is about 30 minutes, and the distribution follows an exponential pdf with rate 1/30.
+
+a. simulate the waiting time for 50 people at the doctor’s office and plot the relative histogram
+b. what is the probability that a person will wait for less than 10 minutes?
+c. evaluate the average waiting time from the simulated data and compare it with the expected value (calculated from theory and by manipulating the probability distributions using R)
+d. what is the probability for waiting more than one hour before being received?
+
+```{r}
+# a)
+set.seed(5)
+m <- 30 
+r <- 1/30
+people <- 50
+x <- seq(0,120,10)
+wait_t <- rexp(people,rate=r)
+hist(wait_t, 
+     breaks = 12, 
+     xlab="wait time", 
+     main = "Waiting time for 50 people",
+     col = "cadetblue",
+     density = 40)
+
+# b)
+p_less10 <- pexp(x[2], r)
+cat(paste("The probability that a person waits for less than 10 minutes is", p_less10, "\n"))
+
+# c)
+m <- mean(wait_t)
+cat(paste("The mean is", m, "\n"))
+cat(paste("The expected value of the exponential distribution is", 1/r, "\n"))
+
+# d)
+p_more60 <- 1-pexp(x[7], r)
+cat(paste("The probability that a person waits for more than 1 hour is", p_more60))
+```
+
+## Exercise 3
+let’s suppose that on a book, on average, there is one typo error every three pages. If the number of errors follows a Poisson distribution, plot the pdf and cdf, and calculate the probability that there is at least one error on a specific page of the book.
+
+```{r}
+typo <- 1/3
+prob_atleastonetypo <- 1 - ppois(0,lambda = typo)
+cat(paste("The probability that there is at least one typo on a specific page is", prob_atleastonetypo))
+xp <- seq(0,7,1)
+d_pois <- dpois(xp,lambda = typo)
+p_pois <- ppois(xp,lambda = typo)
+barplot(d_pois,
+        main = "pdf of the Poisson distribution",
+        xlab = "errors in a page",
+        ylab = "probability",
+        names = xp)
+barplot(p_pois,
+        main = "cdf of the Poisson distribution",
+        xlab = "error in a page",
+        ylab = "probability",
+        names = xp)
+```
+
+## Exercise 4
+We randomly draw cards from a deck of 52 cards, with replacement, until one ace is drawn. Calculate the probability that at least 10 draws are needed.
+
+```{r}
+p_ace <- 4/52
+pr <- (1-p_ace)^9
+pr1 <- 1-dgeom(8, p_ace)-dgeom(7, p_ace)-dgeom(6, p_ace)-dgeom(5, p_ace)-dgeom(4, p_ace)-dgeom(3, p_ace)-dgeom(2, p_ace)-dgeom(1, p_ace)-dgeom(0, p_ace)
+paste("The probability that at least 10 draws are needed to find an ace is", pr1)
+paste("The probability that at least 10 draws are needed to find an ace is", pr)
+```
+
+## Exercise 5
+The file available at the URL https://userswww.pd.infn.it/~agarfa/didattica/sindaciincarica.csv) contains the list of all mayors currently in charge in the Italian mayors working in local towns in Italy. (Updated to April 6, 2020).
+
+- open R and import the file in a tibble or data.frame. 
+- plot the gender distribution among the mayors (column name `sesso`)
+- plot the number of towns grouped per province (`codice_provincia`) and per region (`codice_regione`)
+- plot a distributions of the age (years only) of the mayors. In the `data_nascita` column the birthday is available
+- plot a distribution of the time the mayor is in charge. The starting date is in column `data_elezione`. Since elections happen every 5 years, how many of them are going to complete their mandate this year? And how many in 2021?
+
+```{r}
+library(lubridate)
+
+# 
+sindaci <- read.csv2("sindaciincarica.csv", skip=2)
+head(sindaci)
+
+#
+sex <- table(sindaci$sesso)
+barplot(sex,
+        xlab = "Sex",
+        ylab = "Number of mayors",
+        main = "Gender distribution among the mayors",
+        col = "coral3",
+        density = 40)
+
+#
+town_prov <- table(sindaci$codice_provincia)
+barplot(town_prov, 
+        xlab = "Province ID", 
+        ylab = "Number of cities",
+        main = "Number of cities per province",
+        col = "darkolivegreen3",
+        density = 40)
+
+town_reg <- table(sindaci$codice_regione)
+barplot(town_reg, 
+        xlab = "Region ID", 
+        ylab = "Number of cities",
+        main = "Number of cities per region",
+        col = "darkorchid3",
+        density = 40)
+
+#
+datenascita <- format(as.Date(sindaci$data_nascita, format = "%d/%m/%Y"),"%Y-%m-%d")
+ages <- as.integer(time_length(difftime(as.Date(today()),as.Date(datenascita)), "years"))
+birth <- table(ages)
+barplot(birth, 
+        xlab = "Year", 
+        ylab = "Number of mayors born",
+        main = "Distribution of the age (years only) of the mayors",
+        col = "deepskyblue3",
+        density = 40)
+
+#
+# invece di usare data_elezione penso sia più preciso usare data_entrata_in_carica
+charge_date <- format(as.Date(sindaci$data_entrata_in_carica, "%d/%m/%Y"), "%Y-%m-%d")
+charge_time <- as.integer(time_length(difftime(as.Date(today()),as.Date(charge_date)), "years"))
+years_in_charge <- table(charge_time)
+chargeplt <- barplot(years_in_charge, 
+                     xlab = "Years in charge", 
+                     ylab = "Number of mayors",
+                     main = "Distribution of the charge times",
+                     col = "azure3",
+                     density = 40)
+
+complete2020 <- years_in_charge[["4"]]
+complete2021 <- years_in_charge[["3"]]
+cat(paste("The number of mayors that are going to complete their mandate this year is", complete2020, "\n"))
+cat(paste("The number of mayors that are going to complete their mandate in 2021 is", complete2021))
+```

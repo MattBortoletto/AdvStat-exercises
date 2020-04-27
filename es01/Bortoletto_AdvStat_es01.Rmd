@@ -1,0 +1,231 @@
+---
+title: "Advanced statistics for physics analysis - Exercise 1"
+author: "Matteo Bortoletto"
+date: "15/2/2020"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Exercise 1 
+
+1. The table gives the volume, area, length and maximum and mean depths of some Scottish
+lakes. Create vectors, holding the lake’s name and all the parameters and build a dataframe
+called `scottish.lakes` from the vectors.
+
+```{r}
+name <- c("Loch Ness", "Loch Lomond", "Loch Morar", "Loch Tay", "Loch Awe", "Loch Maree",
+          "Loch Ericht", "Loch Lochy", "Loch Rannoch", "Loch Shiel", "Loch Katrine", "Loch Arkaig", "Loch Shin")
+volume <- c(7.45, 2.6, 2.3, 1.6, 1.2, 1.09, 1.08, 1.07, 0.97, 0.79, 0.77, 0.75, 0.35)
+area <- c(56, 71, 27, 26.4, 39, 28.6, 18.6, 16, 19, 19.5, 12.4, 16, 22.5)
+lenght <- c(39, 36, 18.8, 23, 41, 20, 23, 16, 15.7, 28, 12.9, 19.3, 27.8)
+MaxDepth <- c(230, 190, 310, 150, 94, 114, 156, 162, 134, 128, 151, 109, 49)
+MeanDepth <- c(132, 37, 87, 60.6, 32, 38, 57.6, 70, 51, 40, 43.4, 46.5, 15.5)
+
+scottish.lakes <- data.frame(name, volume, area, lenght, MaxDepth, MeanDepth)
+
+scottish.lakes
+```
+
+2. Order the frame with respect to the area and determine the two largest area lakes.
+
+```{r}
+scottish.lakes[which.max(scottish.lakes$volume),]
+
+scottish.lakes[which.min(scottish.lakes$volume),]
+
+scottish.lakes[which.max(scottish.lakes$area),]
+
+scottish.lakes[which.min(scottish.lakes$area),]
+
+scottish.lakes[order(area),]
+```
+
+3.  By summing up the areas occpupied by the lakes, determine the area of Scotland covered by water.
+
+```{r}
+TotArea <- sum(scottish.lakes$area)
+TotArea
+```
+## Exercise 2 
+Install and load the `DAAG` and the `tibble` packages.
+
+```{r}
+library("DAAG")
+library("tibble")
+```
+
+Get information on the package content and on the ais data frame.
+
+```{r}
+?ais
+```
+
+Create a `tibble` from the `ais data.frame`.
+
+```{r}
+data <- as_tibble(ais)
+data
+```
+
+1. Create a table grouping the data by gender and by sport; produce a barplot with the table adding
+a legend.
+
+```{r}
+library("wesanderson")
+dt = table(data$sex, data$sport)
+dt
+
+barplot(dt, 
+        main="Males and females for each sport",
+        xlab="Sport", 
+        col= wes_palette("GrandBudapest2", n = 2),
+        legend = rownames(dt),
+        beside=TRUE,
+        cex.names=.7)
+```
+
+2. Determine if any of the columns holds missing values.
+
+```{r}
+any(is.na(data))
+```
+
+3. Produce boxplots of the main blood variables (’red blood cell counts’, ’white blood cell counts’,
+’hematocrit’ and ’hemaglobin concentration’), for different kind of sports.
+
+```{r, fig.height=6}
+par(mfrow=c(2,2))
+boxplot(rcc ~ sport, data = ais ,
+        ylab = "red blood cell count (in)" , xlab = "Sport",
+        col = "darkorchid2", medcol = "white", las=2, cex.axis=.65, cex.lab=0.9)
+boxplot(wcc ~ sport, data = ais ,
+        ylab = "white blood cell count (in per liter)" , xlab = "Sport",
+        col = "aquamarine2", medcol = "white", las=2, cex.axis=.65, cex.lab=0.9)
+boxplot(hc ~ sport, data = ais ,
+        ylab = "hematocrit (%)" , xlab = "Sport",
+        col = "darkolivegreen2", medcol = "white", las=2, cex.axis=.65, cex.lab=0.9)
+boxplot(hg ~ sport, data = ais ,
+        ylab = "hemaglobin concentration (g/decaliter)" , xlab = "Sport",
+        col = "goldenrod2", medcol = "white", las=2, cex.axis=.65, cex.lab=0.9)
+title("Main blood variables", outer = TRUE, line = -2)
+```
+
+4. Make some scatter plot correlations of the same blood variables using different colors and symbols
+for the two genders in the sample.
+
+```{r, fig.height=7}
+# non faccio tutti i possibili scatter plot, solo alcuni
+p_area <- matrix(c(1, 2, 3, 4), nrow=2, ncol=2, byrow=TRUE)
+layout(p_area)
+par(cex.lab=1.4)
+par(cex.sub = 1.4)
+plot(data$rcc, data$wcc, pch = c(16,18), 
+     col = ifelse(data$sex == "f", "navy", "darkorange"), asp = 1,
+     xlab = "rcc", ylab = "wcc")
+legend('topright', c('Female', 'Male'), pch=c(16,18), col = c('navy','darkorange'), cex = 1)
+plot(data$rcc, data$hc, pch = c(16,18), 
+     col = ifelse(data$sex == "f", "navy", "darkorange"), asp = 1,
+     xlab = "rcc", ylab = "hc")
+legend('topright', c('Female', 'Male'), pch=c(16,18), col = c('navy','darkorange'), cex = 1)
+plot(data$rcc, data$hg, pch = c(16,18), 
+     col = ifelse(data$sex == "f", "navy", "darkorange"), asp = 1,
+     xlab = "rcc", ylab = "hg")
+legend('topright', c('Female', 'Male'), pch=c(16,18), col = c('navy','darkorange'), cex = 1)
+plot(data$wcc, data$hc, pch = c(16,18), 
+     col = ifelse(data$sex == "f", "navy", "darkorange"), asp = 1,
+     xlab = "wcc", ylab = "hc")
+legend('topright', c('Female', 'Male'), pch=c(16,18), col = c('navy','darkorange'), cex = 1)
+title("Some blood variables scatter plots", outer = TRUE, line = -2)
+```
+
+## Exercise 3
+Download the latest update on the COVID-19 Virus infection fom the European Centers for Disease
+Control.
+
+```{r}
+needed_packages <- c('lubridate','readxl', 'curl')
+already_installed <- needed_packages %in% installed.packages()
+for (pack in needed_packages [!already_installed]) {
+  message (paste("To be installed :", pack , sep =" "))
+  install.packages(pack)
+}
+library (lubridate)
+library (readxl)
+library (curl)
+url <- "https://www.ecdc.europa.eu/sites/default/files/documents/"
+fname <- "COVID-19-geographic-disbtribution-worldwide-"
+date <- lubridate::today() - 1
+ext = ".xlsx"
+target <- paste(url, fname, date, ext, sep ="")
+message ("target: ", target)
+tmp_file <- tempfile("data", "/tmp", fileext = ext)
+tmp <- curl::curl_download(target, destfile = tmp_file)
+covid <- readxl::read_xlsx(tmp_file)
+```
+
+1. Examine the loaded tibble structure.
+
+```{r}
+covid
+```
+
+2. Create a sub-tibble containing only the last day and produce a table with all the countries with number of deaths or number of new cases greater than 200.
+
+```{r}
+lastDay <- subset(covid, dateRep==lubridate::today() - 1)
+lastDay 
+df <- lastDay[lastDay[, "cases"] > 200 & lastDay[, "deaths"] > 200,]
+df
+```
+
+3. Select the top 10 countries, in terms of cases, and plot the total number of cases as a function of
+time. Plot the total number of deaths as a function of time. In order to compare the different
+curves, normalize the first date-time plot to the same $t_0$ value.
+
+```{r}
+covid <- covid[order(-covid$cases),]
+topCases <- covid[!duplicated(covid$countriesAndTerritories),]
+top10cases <- topCases[1:10,]
+top10cases
+
+covidC <- covid[order(covid$dateRep),]
+covidC <- covidC[covidC$countriesAndTerritories %in% top10cases$countriesAndTerritories,]
+covidC
+
+covidC$cum_cases <- ave(covidC$cases, covidC$countriesAndTerritories,FUN=cumsum)
+covidC$cum_deaths <- ave(covidC$deaths,covidC$countriesAndTerritories,FUN=cumsum)
+covidC <- covidC[covidC$cum_cases != 0,]
+t0 <- covidC$dateRep[1]
+
+for (c in covidC$countriesAndTerritories){
+  x <- covidC[covidC$countriesAndTerritories == c, 1]
+  x <- x - as.integer(x[1,1]) + as.integer(t0)
+  covidC[covidC$countriesAndTerritories == c, 1] <- x
+}
+
+
+library(ggplot2)
+
+cases_plt <- ggplot(covidC, 
+                    aes(dateRep, cum_cases, colour=countriesAndTerritories)) +
+             geom_line(aes(color=countriesAndTerritories)) +
+             labs(colour = "Countries", 
+                  x = "Time (rescaled)", 
+                  y = "Total cases", 
+                  title = "Evolution of COVID19 total cases in the top 10 countries") 
+
+deaths_plt <- ggplot(covidC, 
+                     aes(dateRep, cum_deaths, colour=countriesAndTerritories)) +
+              geom_line(aes(color=countriesAndTerritories)) +
+              labs(colour = "Countries", 
+                   x = "Time (rescaled)", 
+                   y = "Total deaths", 
+                   title = "Evolution of COVID19 total deaths in the top 10 countries") 
+cases_plt
+deaths_plt
+```
