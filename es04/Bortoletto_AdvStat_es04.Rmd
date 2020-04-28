@@ -29,37 +29,38 @@ f <- function(x, a, b, c) {
   return(func)
 }
 
-x <- seq(-5,5,0.001)
+x <- seq(-5, 5, 0.001)
 a <- -2
 b <- 3
 c <- 1
 
-plot(x, f(x,a,b,c),
+plot(x, f(x, a, b, c),
      type = "l",
      xlab = "x",
      ylab = "f(x)",
      main = "Triangular distribution",
      col = "forestgreen")
 ```
+
 b. Write an algorithm to generate random numbers from the triangular distribution;
 ```{r}
 set.seed(5)
 
-cdf_f <- function(x,a,b,c) {
+cdf_f <- function(x, a, b, c) {
   func <- ifelse(x<a, 0,
                  ifelse(x<=c, (a-x)^2/((a-b)*(a-c)), 
                         ifelse(x<=b, (x-a)*(a-2*b+x)/((a-b)*(b-c)), 1)))
   return(func)
 }
 
-q_f <- function(x,a,b,c) {
-  func <- ifelse(x<=cdf_f(c,a,b,c), a+sqrt((b-a)*(c-a)*x),
-               ifelse(x>cdf_f(c,a,b,c), b-sqrt((1-x)*(b-a)*(b-c)), 0))
+q_f <- function(x, a, b, c) {
+  func <- ifelse(x<=cdf_f(c, a, b, c), a+sqrt((b-a)*(c-a)*x),
+               ifelse(x>cdf_f(c, a, b, c), b-sqrt((1-x)*(b-a)*(b-c)), 0))
   return(func)
 }
 
-r_f <- function(n,a,b,c) {
-    func <- q_f(runif(n),a,b,c)
+r_f <- function(n, a, b, c) {
+    func <- q_f(runif(n), a, b, c)
     return(func)
 }
 ```
@@ -71,7 +72,7 @@ set.seed(5)
 a <- -3
 b <- 2
 c <- 1
-f_samples <- r_f(10000,a,b,c)
+f_samples <- r_f(10000, a, b, c)
 f_samples[1:10]
 
 hist(f_samples, 
@@ -81,9 +82,9 @@ hist(f_samples,
      col = "aquamarine3",
      density = 50,
      freq = F,
-     ylim = c(0,0.45))
+     ylim = c(0, 0.45))
 
-lines(seq(a,b,0.001), f(seq(a,b,0.001),a,b,c),
+lines(seq(a, b, 0.001), f(seq(a, b, 0.001), a, b, c),
       col = "forestgreen")
 
 legend("topright", c("f(x)"), lwd=4, col="forestgreen")
@@ -97,31 +98,39 @@ a. Plot the probability density function and the cumulative density function;
 p <- c(0.05, 0.19, 0.14, 0.17, 0.02, 0.11, 0.06, 0.05, 0.04, 0.17)
 csum <- cumsum(p)
 
-plot(seq(1,10), p,
+plot(seq(1, 10), p,
      xlab = "x",
      ylab = "Probability",
      type = "s",
      col = "forestgreen",
      main = "PDF")
 
-plot(seq(1,10), csum,
+plot(seq(1, 10), csum,
      xlab = "x",
      ylab = "CDF",
      type = "s",
      col = "forestgreen",
      main = "CDF")
 ```
+
 b. write an algorithm to generate random numbers from the discrete probability distribution
 ```{r}
-sampl <- sample(x=seq(1,10), size=10000, replace=TRUE, prob=p)
-sampl[1:10]
-#####################################
-#####################################
-#####################################
-####### TROVA UN ALTRO MODO #########
-#####################################
-#####################################
-#####################################
+set.seed(10)
+
+r_p <- function(n){
+  unif <- runif(n)
+  store <- c()
+  for (i in 1:n) {
+    #cat("unif[i]:", unif[i], " csum:", csum, "\n")
+    v <- which.max(unif[i]<csum)
+    #cat("v:", v, "\n")
+    store <- c(store,v)
+  }
+  return(store)
+} 
+
+samples <- r_p(10)
+samples
 ```
 
 # Exercise 3
@@ -132,7 +141,36 @@ f(x) = \frac{2}{\pi R^2}\sqrt{R^2-x^2}
 $$
 where $−R\le x \le R$. Using the acceptance-rejection algorithm, assume $M = 2/(\pi R)$ and generate $10^4$ random variables, plotting them in an histogram.
 ```{r}
+f <- function(x, R) {
+  func <- ifelse(x>=-R & x<= R, 2*sqrt(R^2-x^2)/(pi*R^2), 0)
+  return(func)
+}
 
+r_f <- function(R) {
+  a <- -R
+  b <- R
+  n <- 10000
+  M <- 2/(pi*R)
+  udist2 <- runif(n, 0, 1)
+  udist1 <- runif(n, a, b)
+  y <- ifelse(udist2 * M < f(udist1, R), udist1, NA)
+  y.clean <- y[!is.na(y)]
+  return(y.clean[1:n])
+}
+
+samples <- r_f(3)
+hist(samples,
+     freq = F,
+     xlab = "R",
+     ylab = "f(x)",
+     col = "aquamarine3",
+     density = 50,
+     main = "Histogram of samples")
+
+lines(seq(-3,3,0.001), f(seq(-3,3,0.001), 3),
+      col = "forestgreen")
+
+legend("topright", c("pdf"), lwd=4, col="forestgreen")
 ```
 
 # Exercise 4
@@ -148,7 +186,28 @@ Y = \beta\sum_{j=1}^n (-\ln U_j) = -\beta\prod_{j=1}^n U_j
 $$
 write an algorithm to sample variables from an Erlang distribution $\Gamma(m,\beta)$.
 ```{r}
+#rerlang <- function(n, m, beta){
+#    Num <- n*m
+#    vals <- matrix((1/beta)*log(1/(1-runif(Num))),
+#                   nrow=m)
+#    return(colSums(vals))
+#}
 
+#m <- 5
+#b <- 0.5
+#n <- 1e6
+
+#hist(rerlang(n,m,b), freq=FALSE, xlab="Binning", 
+#     col="cornflowerblue",
+#    main="Histogram (normalized) and Probability Density Function")
+
+#xs <- seq(1,45,0.01)
+#lines(xs, dgamma(xs,m,b), col="#ABCDEF", lwd=3)
+
+#legend('topright',
+#       c("Histogram","PDF (Gamma(m,b))"), 
+#       fill=c("cornflowerblue","#ABCDEF")
+#      )
 ```
 
 # Exercise 5
@@ -162,5 +221,20 @@ and, after having removed the head and tail of the list, convert it back to a nu
 
 `(as.numeric(paste(number.after.trimming, collapse="")))`
 ```{r}
+seed = 5772156649
+x = seed
+generated <- c(x)
 
+for(i in 1:10){
+    x.squared <- x^2
+    number <- unlist(strsplit(as.character(x.squared),""))
+    middle <- ceiling(length(number)/2)
+    start <- middle - 4
+    end <- middle + 5
+    number.after.trimming <- number[start:end]
+    x <- as.numeric(paste(number.after.trimming, collapse=""))
+    generated <- c(generated, x)
+}
+
+cat(generated)
 ```

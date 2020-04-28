@@ -400,9 +400,9 @@ r_f &lt;- function(x) {
   a &lt;- 1
   b &lt;- 2
   n &lt;- 10000
-  udist1 &lt;- runif(n, 0, 1)
-  udist2 &lt;- runif(n, a, b)
-  f_max &lt;- 1.5
+  udist1 &lt;- runif(n, a, b)
+  udist2 &lt;- runif(n, 0, 1)
+  f.max &lt;- 1.5
   y &lt;- ifelse(udist2 * f_max &lt; pdf_f(udist1), udist1, NA)
   y.clean &lt;- y[!is.na(y)]
   return(y.clean[1:x])
@@ -468,7 +468,7 @@ paste(&quot;The probability that the tires will last less than 15000 km is&quot;
 m &lt;- mean(samples)
 v &lt;- mean(samples^2)-m^2
 paste(&quot;The mean is&quot;, m, &quot;and the variance is&quot;, v)</code></pre>
-<pre><code>## [1] &quot;The mean is 1.38289096593486 and the variance is 0.0782211582648584&quot;</code></pre>
+<pre><code>## [1] &quot;The mean is 1.39367090620957 and the variance is 0.0789785971690813&quot;</code></pre>
 </div>
 <div id="exercise-3" class="section level2">
 <h2>Exercise 3</h2>
