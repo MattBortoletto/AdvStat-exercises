@@ -1,0 +1,166 @@
+---
+title: "Advanced statistics for physics analysis - Exercise 4"
+author: "Matteo Bortoletto, matr. 1242935"
+date: "28/04/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Exercise 1
+The triangular distribution in the interval $(a, b)$, is given by the following:
+
+$$
+f(x) = \begin{cases}
+  \frac{2(x-a)}{(b-a)(c-a)} & a\le x < c \\
+  \frac{2(b-x)}{(b-a)(b-c)} & c\le x \le b \\
+  0 & \text{otherwise}
+\end{cases}
+$$
+where $c \in [a, b]$.
+
+a. Plot the function, given the interval (a, b);
+```{r}
+f <- function(x, a, b, c) {
+  func <- ifelse(a<=x & x<c, 2*(x-a)/((b-a)*(c-a)), 
+                 ifelse(c<=x & x<=b, 2*(b-x)/((b-a)*(b-c)), 0))
+  return(func)
+}
+
+x <- seq(-5,5,0.001)
+a <- -2
+b <- 3
+c <- 1
+
+plot(x, f(x,a,b,c),
+     type = "l",
+     xlab = "x",
+     ylab = "f(x)",
+     main = "Triangular distribution",
+     col = "forestgreen")
+```
+b. Write an algorithm to generate random numbers from the triangular distribution;
+```{r}
+set.seed(5)
+
+cdf_f <- function(x,a,b,c) {
+  func <- ifelse(x<a, 0,
+                 ifelse(x<=c, (a-x)^2/((a-b)*(a-c)), 
+                        ifelse(x<=b, (x-a)*(a-2*b+x)/((a-b)*(b-c)), 1)))
+  return(func)
+}
+
+q_f <- function(x,a,b,c) {
+  func <- ifelse(x<=cdf_f(c,a,b,c), a+sqrt((b-a)*(c-a)*x),
+               ifelse(x>cdf_f(c,a,b,c), b-sqrt((1-x)*(b-a)*(b-c)), 0))
+  return(func)
+}
+
+r_f <- function(n,a,b,c) {
+    func <- q_f(runif(n),a,b,c)
+    return(func)
+}
+```
+
+c. Generate $10^4$ random numbers from the distribution, show them in an histogram and superimpose the analytical curve.
+```{r}
+set.seed(5)
+
+a <- -3
+b <- 2
+c <- 1
+f_samples <- r_f(10000,a,b,c)
+f_samples[1:10]
+
+hist(f_samples, 
+     xlab = "x",
+     ylab = "f(x)",
+     main = "Triangular distribution histogram",
+     col = "aquamarine3",
+     density = 50,
+     freq = F,
+     ylim = c(0,0.45))
+
+lines(seq(a,b,0.001), f(seq(a,b,0.001),a,b,c),
+      col = "forestgreen")
+
+legend("topright", c("f(x)"), lwd=4, col="forestgreen")
+```
+
+# Exercise 2
+Given a discrete probability distribution defined by the following probabilities: 0.05, 0.19, 0.14, 0.17, 0.02, 0.11, 0.06, 0.05, 0.04, 0.17:
+
+a. Plot the probability density function and the cumulative density function;
+```{r}
+p <- c(0.05, 0.19, 0.14, 0.17, 0.02, 0.11, 0.06, 0.05, 0.04, 0.17)
+csum <- cumsum(p)
+
+plot(seq(1,10), p,
+     xlab = "x",
+     ylab = "Probability",
+     type = "s",
+     col = "forestgreen",
+     main = "PDF")
+
+plot(seq(1,10), csum,
+     xlab = "x",
+     ylab = "CDF",
+     type = "s",
+     col = "forestgreen",
+     main = "CDF")
+```
+b. write an algorithm to generate random numbers from the discrete probability distribution
+```{r}
+sampl <- sample(x=seq(1,10), size=10000, replace=TRUE, prob=p)
+sampl[1:10]
+#####################################
+#####################################
+#####################################
+####### TROVA UN ALTRO MODO #########
+#####################################
+#####################################
+#####################################
+```
+
+# Exercise 3
+Generate random variables from the following distribution:
+
+$$
+f(x) = \frac{2}{\pi R^2}\sqrt{R^2-x^2}
+$$
+where $−R\le x \le R$. Using the acceptance-rejection algorithm, assume $M = 2/(\pi R)$ and generate $10^4$ random variables, plotting them in an histogram.
+```{r}
+
+```
+
+# Exercise 4
+An important property of the gamma distribution is the so-called reproductive property: given a sequence of independent random variables $X_j \sim \Gamma(\alpha_j,\beta)$, it follows that
+
+$$
+Y = \sum_{j=1}^n X_j \longrightarrow \Gamma(\alpha,\beta), \quad \text{where } \alpha = \sum_{j=1}^n \alpha_j
+$$
+If $\alpha = m$ is an integer, a random variable from gamma distribution $\Gamma(m,\beta)$ (also known as Erlang distribution) can be obtained by summing $m$ independent exponential random variables $X_j \sim \text{Exp}(\beta)$:
+
+$$
+Y = \beta\sum_{j=1}^n (-\ln U_j) = -\beta\prod_{j=1}^n U_j
+$$
+write an algorithm to sample variables from an Erlang distribution $\Gamma(m,\beta)$.
+```{r}
+
+```
+
+# Exercise 5
+One of the first random number generators was proposed by von Neumann, the so-called middle square algorithm. Write R code to implement this type of generator and, given a fixed digit number input, square it an remove the leading and trailing digits, in order to return a number with the same number of digits as the original number. 
+
+*Suggestion*: after having squared the number, convert it to a list of characters 
+
+`(number <- unlist(strsplit(as.character(x.squared),"")))`
+
+and, after having removed the head and tail of the list, convert it back to a number
+
+`(as.numeric(paste(number.after.trimming, collapse="")))`
+```{r}
+
+```
