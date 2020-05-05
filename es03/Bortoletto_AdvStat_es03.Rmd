@@ -104,6 +104,21 @@ q_f <- function(p) {
   x <- max(cdf_values[cdf_values<p])
   return(x)
 }
+
+x <- seq(1,2.5,0.001)
+plot(x, pdf_f(x),
+     xlab = "x",
+     ylab = "PDF",
+     type = "s",
+     col = "blue",
+     main = "PDF")
+
+plot(x, cdf_f(x),
+     xlab = "x",
+     ylab = "CDF",
+     type = "s",
+     col = "blue",
+     main = "CDF")
 ```
 
 b. determine the probability that tires will last less than 15000 km;

@@ -1,0 +1,217 @@
+---
+title: "Advanced statistics for physics analysis - Exercise 5"
+author: "Matteo Bortoletto, matr. 1242935"
+date: "05/05/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Exercise 1
+
+A publishing company has recently launched a new journal. In order to determine how effective it is in reaching its possible audience, a market survey company selects a random sample of people from a possible target audience and interviews them. Out of 150 interviewed people, 29 have read the last issue of the journal.
+
+a. What kind of distribution would you assume for $y$, the number of people that have seen the last issue of the journal?
+
+I assume that the distribution is the binomial one.
+```{r}
+n <- 150
+r <- 29
+p <- seq(0, 1, length.out = 201) 
+p.post <- dbinom(x=r, size=n, prob=p)
+plot(p, p.post, 
+     col = "deepskyblue4", 
+     lwd = 1.5,
+     type = "l", 
+     xlab = "p", 
+     ylab = expression(paste(P^symbol("*"), "(p|r,n,M)")),
+     main = "Distribution for y")
+```
+
+b. Assuming a uniform prior, what is the posterior distribution for $y$?
+
+```{r}
+n.sample <- 2000 # number of intervals in which we divide [0,1] 
+delta.p <- 1/n.sample # sub-intervals length
+p <- seq(from=1/(2*n.sample), by=1/n.sample, length.out=n.sample)
+
+p.star <- dbinom(x=r, size=n, prob=p) 
+p.norm <- p.star/(delta.p*sum(p.star)) 
+
+plot(p, p.norm, 
+     type="l", 
+     lwd=1.5, 
+     col="deepskyblue3", 
+     xlim=c(0,1), 
+     ylim=c(0,1.1*max(p.norm)), 
+     xaxs="i", 
+     yaxs="i", 
+     xlab="p", 
+     ylab="P(p|r,n,M)") 
+
+title(main=paste("Uniform prior, r =",r), line=0.3, cex.main=1.2) 
+
+```
+
+c. Plot both posterior and likelihood ditributions functions.
+
+```{r}
+
+```
+
+
+## Exercise 2
+
+Three students want to construct their prior probability about the proportion of residents that support the building of a new concert hall in their small town. Anna thinks that her prior is a beta distribution with mean 0.2 and a standard deviation of 0.08. Benny moved only recently to this new town and therefore he does non have the slightest idea about it. Therefore he decides to use a uniform prior. Chris believes that his prior should have a trapezoidal shape:
+
+$$
+f(x) = 
+\begin{cases}
+20x & 0\le x <0.1 \\
+2 & 0.1\le x <0.3 \\
+5-10x & 0.3\le x <0.5 \\
+0 & x\ge 0.5
+\end{cases}
+$$
+
+a. Draw and compare the three prior distributions.
+```{r}
+p <- seq(0, 1, length.out = 201) 
+alpha <- 0.2
+beta <- 0.8
+anna.prior <- dbeta(p, alpha, beta)
+benny.prior <- dunif(p)
+chris.prior <- function(x){
+  prior.v <- ifelse(x >= 0 & x < 0.1, 20*p, 
+                    ifelse(x >= 0.1 & x < 0.3, 2,
+                           ifelse(x >= 0.3 & x < 0.5, 5-10*x, 0)))
+  return(prior.v)
+}
+
+plot(p, anna.prior,
+     ylim = c(0,3),
+     lwd=1.5,
+     type = "l",
+     xlab = "p",
+     ylab = "Prior",
+     col = "deepskyblue3",
+     main = "Prior distributions")
+
+lines(p, benny.prior,
+      lwd=1.5,
+      type = "l",
+      col = "darkseagreen3")
+
+lines(p, chris.prior(p),
+      lwd=1.5,
+      type = "l",
+      col = "indianred3")
+
+legend("topright", 
+       c("Anna", "Benny", "Chris"), 
+       lwd=3, 
+       col=c("deepskyblue3","darkseagreen3","indianred3"))
+```
+
+The next day the three students decide to interview a sample of 100 citizens of the small town, asking for their opinion. Out of the interviewed sample, 26 support the building of the new concert hall.
+
+b. Evaluate and draw the three prior distributions.
+```{r}
+plot(p, anna.prior,
+     ylim = c(0,3),
+     lwd=1.5,
+     type = "l",
+     xlab = "p",
+     ylab = "Prior",
+     col = "deepskyblue3",
+     main = "Prior distributions after the interview")
+
+lines(p, benny.prior,
+      lwd=1.5,
+      type = "l",
+      col = "darkseagreen3")
+
+lines(p, seq(chris.prior(0.26),chris.prior(0.26),length.out = 201),
+      lwd=1.5,
+      type = "l",
+      col = "indianred3")
+
+legend("topright", 
+       c("Anna", "Benny", "Chris"), 
+       lwd=3, 
+       col=c("deepskyblue3","darkseagreen3","indianred3"))
+```
+
+c. Give an estimate of the most probable value and the 95% credibility interval.
+```{r}
+
+```
+
+## Exercise 3
+A coin is flipped n = 30 times with the following outcomes:
+`T, T, T, T, T, H, T, T, H, H, T, T, H, H, H, T, H, T, H, T, H, H, T, H, T, H, T, H,
+H, H`
+
+a. Assuming a flat prior, and a beta prior, plot the likelihood, prior and posterior distributions for the data set.
+```{r}
+n <- 30
+r <- 15  # heads
+p <- seq(0, 1, length.out = 201) 
+p.post <- dbinom(x=r, size=n, prob=p)
+
+plot(p, p.post, 
+     xaxs="i", 
+     yaxs="i", 
+     col="navy", 
+     type="l", 
+     lty=1, 
+     lwd = 1.5, 
+     ylim=c(0,0.2),
+     xlab="p",
+     ylab=expression(paste(P^symbol("*"),"(p|r,n,M)")),
+     main = "Posterior")
+
+p.star <- dbinom(x=r, size=n, prob=p)
+p.norm <- p.star/(delta.p*sum(p.star))
+plot(p, p.norm,
+     type="l", 
+     lwd=1.5, 
+     col="navy",
+     xlim=c(0,1), 
+     ylim=c(0,1.1*max(p.norm)),
+     xaxs="i", 
+     yaxs="i", 
+     xlab="p", 
+     ylab="P(p|r,n,M)",
+     main=paste("Uniform prior, r =",r)) 
+
+# p.prior <- dbeta(p, alpha, beta) COME TROVO ALPHA E BETA PARTENDO DA r e n?
+# plot(p, p.prior,
+#      xaxs="i",
+#      yaxs="i",
+#      col="navy",
+#      type="l",
+#      lty=1,
+#      lwd = 1.5,
+#      ylim=c(0,3.75),
+#      xlab="p",
+#      ylab=paste("P(p|M)"),
+#      main=paste("Beta(",alpha,",",beta,") prior"))
+```
+
+b. Evaluate the most probable value for the coin probability $p$ and, integrating the posterior probability distribution, give an estimate for a 95% credibility interval.
+```{r}
+
+```
+
+c. Repeat the same analysis assuming a sequential analysis of the data. Show how the most probable value and the credibility interval change as a function of the number of coin tosses (i.e. from 1 to 30).
+```{r}
+
+```
+
+d. Do you get a different result, by analyzing the data sequentially with respect to a one-step analysis (i.e. considering all the data as a whole)?
+```{r}
+
+```

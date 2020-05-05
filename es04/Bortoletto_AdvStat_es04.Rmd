@@ -186,28 +186,28 @@ Y = \beta\sum_{j=1}^n (-\ln U_j) = -\beta\prod_{j=1}^n U_j
 $$
 write an algorithm to sample variables from an Erlang distribution $\Gamma(m,\beta)$.
 ```{r}
-#rerlang <- function(n, m, beta){
-#    Num <- n*m
-#    vals <- matrix((1/beta)*log(1/(1-runif(Num))),
-#                   nrow=m)
-#    return(colSums(vals))
-#}
+r_erlang <- function(n, b) {
+  unif <- runif(n)
+  e <- -b*log(unif)
+  return(e)
+}
 
-#m <- 5
-#b <- 0.5
-#n <- 1e6
+m <- 3
+b <- 0.5
+n <- 1e4
+x <- seq(0, 100, 0.001)
 
-#hist(rerlang(n,m,b), freq=FALSE, xlab="Binning", 
-#     col="cornflowerblue",
-#    main="Histogram (normalized) and Probability Density Function")
+hist(r_erlang(n, 2), 
+     freq = FALSE,
+     xlab = "x",
+     main = "Histogram of Erlang samples",
+     col = "aquamarine3",
+     density = 50)
 
-#xs <- seq(1,45,0.01)
-#lines(xs, dgamma(xs,m,b), col="#ABCDEF", lwd=3)
+lines(x, dgamma(x, 1, b),
+      col = "forestgreen")
 
-#legend('topright',
-#       c("Histogram","PDF (Gamma(m,b))"), 
-#       fill=c("cornflowerblue","#ABCDEF")
-#      )
+legend("topright", c("pdf"), lwd=4, col="forestgreen")
 ```
 
 # Exercise 5
@@ -221,16 +221,17 @@ and, after having removed the head and tail of the list, convert it back to a nu
 
 `(as.numeric(paste(number.after.trimming, collapse="")))`
 ```{r}
-seed = 5772156649
-x = seed
+seed <- 5772156649
+l <- 5
+x <- seed
 generated <- c(x)
 
 for(i in 1:10){
     x.squared <- x^2
     number <- unlist(strsplit(as.character(x.squared),""))
     middle <- ceiling(length(number)/2)
-    start <- middle - 4
-    end <- middle + 5
+    start <- middle - l + 1
+    end <- middle + l
     number.after.trimming <- number[start:end]
     x <- as.numeric(paste(number.after.trimming, collapse=""))
     generated <- c(generated, x)
