@@ -15,50 +15,56 @@ A publishing company has recently launched a new journal. In order to determine 
 
 a. What kind of distribution would you assume for $y$, the number of people that have seen the last issue of the journal?
 
-I assume that the distribution is the binomial one.
-```{r}
-n <- 150
-r <- 29
-p <- seq(0, 1, length.out = 201) 
-p.post <- dbinom(x=r, size=n, prob=p)
-plot(p, p.post, 
-     col = "deepskyblue4", 
-     lwd = 1.5,
-     type = "l", 
-     xlab = "p", 
-     ylab = expression(paste(P^symbol("*"), "(p|r,n,M)")),
-     main = "Distribution for y")
-```
+I assume that the distribution is the binomial one:
+
+$$
+P(r|p,n,M) = \binom{n}{r}p^r(1-p)^{n-r}
+$$
 
 b. Assuming a uniform prior, what is the posterior distribution for $y$?
 
-```{r}
-n.sample <- 2000 # number of intervals in which we divide [0,1] 
-delta.p <- 1/n.sample # sub-intervals length
-p <- seq(from=1/(2*n.sample), by=1/n.sample, length.out=n.sample)
+The posterior is given by
 
-p.star <- dbinom(x=r, size=n, prob=p) 
-p.norm <- p.star/(delta.p*sum(p.star)) 
+$$
+P(p|n,r,M) = \frac{1}{Z}p^r(1-p)^{n-r}
+$$
+where
 
-plot(p, p.norm, 
-     type="l", 
-     lwd=1.5, 
-     col="deepskyblue3", 
-     xlim=c(0,1), 
-     ylim=c(0,1.1*max(p.norm)), 
-     xaxs="i", 
-     yaxs="i", 
-     xlab="p", 
-     ylab="P(p|r,n,M)") 
-
-title(main=paste("Uniform prior, r =",r), line=0.3, cex.main=1.2) 
-
-```
+$$
+Z = \sum_{j} p_j^r(1-p_j)^{n-r}\Delta p_j
+$$
 
 c. Plot both posterior and likelihood ditributions functions.
 
 ```{r}
+n <- 150
+r <- 29
+p <- seq(0, 1, length.out = 201) 
+likelihood <- dbinom(x=r, size=n, prob=p)
+plot(p, likelihood, 
+     col = "deepskyblue3", 
+     lwd = 1.5,
+     type = "l", 
+     xlab = "p", 
+     ylab = "P(r|n,r,M)",
+     main = "Likelihood")
 
+n.sample <- 2000 # number of intervals in which we divide [0,1] 
+delta.p <- 1/n.sample # sub-intervals length
+p <- seq(from=1/(2*n.sample), by=1/n.sample, length.out=n.sample)
+
+post.star <- dbinom(x=r, size=n, prob=p) 
+post.norm <- post.star/(delta.p*sum(post.star)) 
+
+plot(p, post.norm, 
+     type = "l", 
+     lwd = 1.5, 
+     col = "deepskyblue3", 
+     xlim = c(0,1), 
+     ylim = c(0,1.1*max(post.norm)), 
+     xlab = "p", 
+     ylab = "P(p|r,n,M)",
+     main = paste("Posterior with uniform prior, r =", r)) 
 ```
 
 
@@ -80,9 +86,13 @@ a. Draw and compare the three prior distributions.
 ```{r}
 p <- seq(0, 1, length.out = 201) 
 alpha <- 0.2
-beta <- 0.8
-anna.prior <- dbeta(p, alpha, beta)
+beta <- 0.08 # GIUSTO? <--------------------------------------------
+anna.prior <- function(p, alpha, beta) {
+  return(dbeta(p, alpha, beta))
+}
+
 benny.prior <- dunif(p)
+
 chris.prior <- function(x){
   prior.v <- ifelse(x >= 0 & x < 0.1, 20*p, 
                     ifelse(x >= 0.1 & x < 0.3, 2,
@@ -90,7 +100,7 @@ chris.prior <- function(x){
   return(prior.v)
 }
 
-plot(p, anna.prior,
+plot(p, anna.prior(p, alpha, beta),
      ylim = c(0,3),
      lwd=1.5,
      type = "l",
@@ -102,7 +112,7 @@ plot(p, anna.prior,
 lines(p, benny.prior,
       lwd=1.5,
       type = "l",
-      col = "darkseagreen3")
+      col = "springgreen3")
 
 lines(p, chris.prior(p),
       lwd=1.5,
@@ -111,15 +121,15 @@ lines(p, chris.prior(p),
 
 legend("topright", 
        c("Anna", "Benny", "Chris"), 
-       lwd=3, 
-       col=c("deepskyblue3","darkseagreen3","indianred3"))
+       lwd = 3, 
+       col = c("deepskyblue3", "springgreen3", "indianred3"))
 ```
 
 The next day the three students decide to interview a sample of 100 citizens of the small town, asking for their opinion. Out of the interviewed sample, 26 support the building of the new concert hall.
 
 b. Evaluate and draw the three prior distributions.
 ```{r}
-plot(p, anna.prior,
+plot(p, anna.prior(p, alpha = 0.26, beta = beta),
      ylim = c(0,3),
      lwd=1.5,
      type = "l",
@@ -131,22 +141,24 @@ plot(p, anna.prior,
 lines(p, benny.prior,
       lwd=1.5,
       type = "l",
-      col = "darkseagreen3")
+      col = "springgreen3")
 
-lines(p, seq(chris.prior(0.26),chris.prior(0.26),length.out = 201),
-      lwd=1.5,
+lines(p, seq(chris.prior(0.26), chris.prior(0.26), length.out = 201),
+      lwd = 1.5,
       type = "l",
       col = "indianred3")
 
 legend("topright", 
        c("Anna", "Benny", "Chris"), 
-       lwd=3, 
-       col=c("deepskyblue3","darkseagreen3","indianred3"))
+       lwd = 3, 
+       col = c("deepskyblue3", "springgreen3", "indianred3"))
 ```
 
 c. Give an estimate of the most probable value and the 95% credibility interval.
 ```{r}
-
+# for a uniform distribution p0 = r/n and sigma = sqrt(r*(n-r)/n)/n
+# for a beta prior p0 = (r+alpha-1)/(n+alpha+beta-2) and sigma = sqrt((alpha+r-1)/(alpha+r))/(alpha+beta+n-2)
+# the 95% credibility interval is given by 3*sigma
 ```
 
 ## Exercise 3
@@ -158,52 +170,91 @@ a. Assuming a flat prior, and a beta prior, plot the likelihood, prior and poste
 ```{r}
 n <- 30
 r <- 15  # heads
-p <- seq(0, 1, length.out = 201) 
-p.post <- dbinom(x=r, size=n, prob=p)
+p <- seq(0, 1, length.out = 201)
 
-plot(p, p.post, 
-     xaxs="i", 
-     yaxs="i", 
-     col="navy", 
-     type="l", 
-     lty=1, 
+likelihood <- dbinom(x=r, size=n, prob=p)
+plot(p, likelihood, 
+     col = "deepskyblue3", 
+     lwd = 1.5,
+     type = "l", 
+     xlab = "p", 
+     ylab = "P(r|n,r,M)",
+     main = "Likelihood")
+
+flat.prior <- dunif(p)
+
+alpha.p <- 0.5 # assume a fair coin
+beta.p <- 0.08
+beta.prior <- dbeta(p, alpha.p, beta.p)
+
+plot(p, beta.prior,
+     col = "indianred3", 
+     type= "l", 
+     lty = 1, 
      lwd = 1.5, 
-     ylim=c(0,0.2),
-     xlab="p",
-     ylab=expression(paste(P^symbol("*"),"(p|r,n,M)")),
-     main = "Posterior")
+     xlab = "p",
+     ylab = "P(p|M)",
+     main = "Priors")
 
-p.star <- dbinom(x=r, size=n, prob=p)
-p.norm <- p.star/(delta.p*sum(p.star))
-plot(p, p.norm,
-     type="l", 
-     lwd=1.5, 
-     col="navy",
-     xlim=c(0,1), 
-     ylim=c(0,1.1*max(p.norm)),
-     xaxs="i", 
-     yaxs="i", 
-     xlab="p", 
-     ylab="P(p|r,n,M)",
-     main=paste("Uniform prior, r =",r)) 
+lines(p, flat.prior,
+     col = "deepskyblue3", 
+     type= "l", 
+     lty = 1, 
+     lwd = 1.5)
 
-# p.prior <- dbeta(p, alpha, beta) COME TROVO ALPHA E BETA PARTENDO DA r e n?
-# plot(p, p.prior,
-#      xaxs="i",
-#      yaxs="i",
-#      col="navy",
-#      type="l",
-#      lty=1,
-#      lwd = 1.5,
-#      ylim=c(0,3.75),
-#      xlab="p",
-#      ylab=paste("P(p|M)"),
-#      main=paste("Beta(",alpha,",",beta,") prior"))
+legend("topleft", 
+       c("Beta prior", "Uniform prior"), 
+       lwd = 3, 
+       col = c("indianred3", "deepskyblue3"))
+
+n.sample <- 2000 # number of intervals in which we divide [0,1] 
+delta.p <- 1/n.sample # sub-intervals length
+p <- seq(from=1/(2*n.sample), by=1/n.sample, length.out=n.sample)
+post.star.u <- dbinom(x=r, size=n, prob=p)
+post.norm.u <- post.star.u/(delta.p*sum(post.star.u))
+plot(p, post.norm.u,
+     type = "l", 
+     lwd = 1.5, 
+     col = "deepskyblue3",
+     ylim = c(0, 1.1*max(post.norm.u)),
+     xlab = "p", 
+     ylab = "P(p|r,n,M)",
+     main = paste("Posteriors, r =", r)) 
+
+alpha <- alpha.p + r 
+beta <- beta.p + n - r 
+post.star.b <- dbeta(p, alpha, beta)
+post.norm.b <- post.star.b/(delta.p*sum(post.star.b))
+lines(p, post.norm.b,
+     type = "l", 
+     lwd = 1.5, 
+     col = "indianred3",
+     #ylim=c(0,1.1*max(post.norm.b)),
+     xlab = "p", 
+     ylab = "P(p|r,n,M)")
+     #main=paste("Posterior with beta prior, r =",r)) 
+
+legend("topleft", 
+       c("Beta prior", "Uniform prior"), 
+       lwd = 3, 
+       col = c("indianred3", "deepskyblue3"))
 ```
 
 b. Evaluate the most probable value for the coin probability $p$ and, integrating the posterior probability distribution, give an estimate for a 95% credibility interval.
 ```{r}
+p0.u <- r/n
+cat("UNIFORM PRIOR - The most probable value for the coin probability p is:", p0.u, "\n")
 
+sigma.u <- sqrt(r*(n-r)/n)/n
+cred.int.95.u <- 3*sigma.u
+cat("UNIFORM PRIOR - The 95% credibility interval is:", cred.int.95.u, "\n")
+
+p0.b <- (r+alpha-1)/(n+alpha+beta-2)
+cat("BETA PRIOR - The most probable value for the coin probability p is:", p0.b, "\n")
+
+sigma.b <- sqrt((alpha+r-1)/(alpha+r))/(alpha+beta+n-2)
+cred.int.95.b <- 3*sigma.b
+cat("BETA PRIOR - The 95% credibility interval is:", cred.int.95.b)
 ```
 
 c. Repeat the same analysis assuming a sequential analysis of the data. Show how the most probable value and the credibility interval change as a function of the number of coin tosses (i.e. from 1 to 30).

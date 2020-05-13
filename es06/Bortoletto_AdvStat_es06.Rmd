@@ -1,0 +1,65 @@
+---
+title: "Advanced statistics for physics analysis - Exercise 6"
+author: "Matteo Bortoletto, matr. 1242935"
+date: "15/05/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Exercise 1
+The number of particles emitted by a radioactive source during a fixed interval of time ($\Delta t = 10$ s) follows a Poisson distribution on the parameter $\mu$. The number of particles observed during consecutive time intervals is: 4, 1, 3, 1 and 3.
+
+a. Suppose a uniform prior distribution for the parameter $\mu$.
+
+    - Determine and draw the posterior distribution for $\mu$, given the data. 
+    - Evaluate mean, median and variance, both analytically and numerically in `R`.
+
+```{r}
+#code
+```
+
+b. Suppose a Jeffrey’s prior for the parameter $\mu$. 
+
+    - Determine and draw the posterior distribution for $\mu$, given the data. 
+    - Evaluate mean, median and variance, both analytically and numerically in `R`.
+
+```{r}
+#code
+```
+
+c. Evaluate a 95% credibility interval for the results obtained with both priors. Compare the result with that obtained using a normal approximation for the posterior distribution, with the same mean and standard deviation.
+
+```{r}
+#code
+```
+
+
+# Exercise 2
+Given the problem of the lighthouse discussed last week, study the case in which both the position along the shore ($\alpha$) and the distance out at the sea ($\beta$) are unknown.
+
+```{r}
+#code
+```
+
+
+# Exercise 3
+Given the Signal over Background example discussed last week, analyze and discuss the following cases:
+
+a. Vary the sampling resolution used to generate the data, keeping the same sampling range:
+
+`xdat <- seq(from=-7*w, to=7*w, by=0.5*w)`
+
+Use $w = \{0.1,0.25,1,2,3\}$. Check the effect on the results.
+
+```{r}
+#code
+```
+
+b. Change the ratio $A/B$ used to simulate the data (keeping both positive in accordance with the prior). Check the effect on the results.
+
+```{r}
+#code
+```

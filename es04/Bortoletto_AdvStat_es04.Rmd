@@ -221,7 +221,7 @@ and, after having removed the head and tail of the list, convert it back to a nu
 
 `(as.numeric(paste(number.after.trimming, collapse="")))`
 ```{r}
-seed <- 5772156649
+seed <- 9172886649
 l <- 5
 x <- seed
 generated <- c(x)
