@@ -288,62 +288,105 @@ c. Repeat the same analysis assuming a sequential analysis of the data. Show how
 outcomes <- c("T", "T", "T", "T", "T", "H", "T", "T", "H", "H", "T", "T", "H", "H", "H",
               "T", "H", "T", "H", "T", "H", "H", "T", "H", "T", "H", "T", "H", "H", "H")
 
-n <- 30
-n.sample <- 2000
-delta.p <- 1/n.sample
+n.sample <- 2000 # number of intervals in which we divide [0,1] 
+delta.p <- 1/n.sample # sub-intervals length
 p <- seq(from=1/(2*n.sample), by=1/n.sample, length.out=n.sample)
 
 r <- 0
-upper.bond <- c()
-lower.bond <- c()
-most.prob <- c()
-pst.norm <- dunif(p)
+upper.bond.u <- c()
+lower.bond.u <- c()
+most.prob.u <- c()
+upper.bond.b <- c()
+lower.bond.b <- c()
+most.prob.b <- c()
 plt = FALSE
 for(i in 1:30) {
   if(outcomes[i]=="H") { 
     r <- r + 1
   }
-  pst.star <- dbinom(x = r, size = i, prob = p)*pst.norm
-  pst.norm <- pst.star/(delta.p*sum(pst.star))
-  #cat(p.norm[1:10], "\n")
+  pst.star.u <- dbinom(x = r, size = i, prob = p)
+  pst.norm.u <- pst.star.u/(delta.p*sum(pst.star.u))
+  pst.star.b <- dbeta(p, 0.5 + r, 0.5 + i - r)
+  pst.norm.b <- pst.star.b/(delta.p*sum(pst.star.b))
   if(plt == TRUE) {
-    plot(p, pst.norm, 
+    plot(p, pst.norm.u, 
          type = "l", 
          lwd = 1.5, 
          col = "deepskyblue3",
          xlab = "p",
          ylab = "P(p|r,n,M)",
-         main=paste("Posterior, r =", r, ", n =", i))
+         main=paste("Posterior for uniform prior, r =", r, ", n =", i))
+    plot(p, pst.norm.b, 
+         type = "l", 
+         lwd = 1.5, 
+         col = "deepskyblue3",
+         xlab = "p",
+         ylab = "P(p|r,n,M)",
+         main=paste("Posterior for beta prior, r =", r, ", n =", i))
   }
-  #cat(p.norm[1:10], "\n")
-  x1 <- p[which.min(abs(0.025-cumsum(pst.norm*delta.p)))]
-  x2 <- p[which.min(abs(0.975-cumsum(pst.norm*delta.p)))]
-  most.prob <- c(most.prob, p[which.max(pst.norm)])
-  lower.bond <- c(lower.bond, x1)
-  upper.bond <- c(upper.bond, x2)
+  # uniform prior
+  x1.u <- p[which.min(abs(0.025-cumsum(pst.norm.u*delta.p)))]
+  x2.u <- p[which.min(abs(0.975-cumsum(pst.norm.u*delta.p)))]
+  most.prob.u <- c(most.prob.u, p[which.max(pst.norm.u)])
+  lower.bond.u <- c(lower.bond.u, x1.u)
+  upper.bond.u <- c(upper.bond.u, x2.u)
+  #beta prior
+  x1.b <- p[which.min(abs(0.025-cumsum(pst.norm.b*delta.p)))]
+  x2.b <- p[which.min(abs(0.975-cumsum(pst.norm.b*delta.p)))]
+  most.prob.b <- c(most.prob.b, p[which.max(pst.norm.b)])
+  lower.bond.b <- c(lower.bond.b, x1.b)
+  upper.bond.b <- c(upper.bond.b, x2.b)
 }
 
-#cat(lower.bond, "\n")
-#cat("\n")
-#cat(upper.bond, "\n")
-#cat("\n")
-#cat(most.prob)
+cat("-- UNIFORM PRIOR \n")
+cat("[x1, x2] = [", lower.bond.u[30], ",", upper.bond.u[30], "] \n")
+cat("Most probable value =", most.prob.u[30], "\n")
+cat("\n")
+cat("-- BETA PRIOR \n")
+cat("[x1, x2] = [", lower.bond.b[30], ",", upper.bond.b[30], "] \n")
+cat("Most probable value =", most.prob.b[30])
 
-plot(seq(1,30), lower.bond,
+plot(seq(1,30), lower.bond.u,
      type = "l", 
      lwd = 1.5, 
      ylim = c(0,1),
      col = "deepskyblue3",
      xlab = "Number of tosses",
      ylab = "p",
-     main=paste("Evolution of 95% C.I. bonds and most probable value"))
+     main=paste("Evolution of 95% C.I. bonds and most probable value - Uniform prior"))
 
-lines(seq(1,30), upper.bond,
+lines(seq(1,30), upper.bond.u,
       type = "l",
       lwd = 1.5,
       col = "chartreuse4")
 
-lines(seq(1,30), most.prob,
+lines(seq(1,30), most.prob.u,
+      type = "l",
+      lwd = 1.5,
+      col = "coral")
+
+legend("topright", 
+       c("lower bound", "upper bound", "most probable value"), 
+       lwd = 3, 
+       col = c("deepskyblue3", "chartreuse4", "coral"))
+
+abline(h = 0.5, lty = 2)
+
+plot(seq(1,30), lower.bond.b,
+     type = "l", 
+     lwd = 1.5, 
+     ylim = c(0,1),
+     col = "deepskyblue3",
+     xlab = "Number of tosses",
+     ylab = "p",
+     main=paste("Evolution of 95% C.I. bonds and most probable value - Beta prior"))
+
+lines(seq(1,30), upper.bond.b,
+      type = "l",
+      lwd = 1.5,
+      col = "chartreuse4")
+
+lines(seq(1,30), most.prob.b,
       type = "l",
       lwd = 1.5,
       col = "coral")
@@ -357,66 +400,5 @@ abline(h = 0.5, lty = 2)
 ```
 
 d. Do you get a different result, by analyzing the data sequentially with respect to a one-step analysis (i.e. considering all the data as a whole)?
-```{r}
-r <- 0
-upper.bond <- c()
-lower.bond <- c()
-most.prob <- c()
-plt = FALSE
-pst.norm <- dunif(p)
-for(i in 1:30) {
-  if(outcomes[i]=="H") { 
-    r <- r + 1
-  }
-  pst.star <- dbinom(x = r, size = i, prob = p)
-  pst.norm <- pst.star/(delta.p*sum(pst.star))
-  #cat(p.norm[1:10], "\n")
-  if(plt == TRUE) {
-  plot(p, pst.norm, 
-       type = "l", 
-       lwd = 1.5, 
-       col = "deepskyblue3",
-       xlab = "p",
-       ylab = "P(p|r,n,M)",
-       main=paste("Posterior, r =", r, ", n =", i))
-  }
-  #cat(p.norm[1:10], "\n")
-  x1 <- p[which.min(abs(0.025-cumsum(pst.norm*delta.p)))]
-  x2 <- p[which.min(abs(0.975-cumsum(pst.norm*delta.p)))]
-  most.prob <- c(most.prob, p[which.max(pst.norm)])
-  lower.bond <- c(lower.bond, x1)
-  upper.bond <- c(upper.bond, x2)
-}
 
-#cat(lower.bond, "\n")
-#cat("\n")
-#cat(upper.bond, "\n")
-#cat("\n")
-#cat(most.prob)
-
-plot(seq(1,30), lower.bond,
-     type = "l", 
-     lwd = 1.5, 
-     ylim = c(0,1),
-     col = "deepskyblue3",
-     xlab = "Number of tosses",
-     ylab = "p",
-     main=paste("Evolution of 95% C.I. bonds and most probable value"))
-
-lines(seq(1,30), upper.bond,
-      type = "l",
-      lwd = 1.5,
-      col = "chartreuse4")
-
-lines(seq(1,30), most.prob,
-      type = "l",
-      lwd = 1.5,
-      col = "coral")
-
-legend("topright", 
-       c("lower bound", "upper bound", "most probable value"), 
-       lwd = 3, 
-       col = c("deepskyblue3", "chartreuse4", "coral"))
-
-abline(h = 0.5, lty = 2)
-```
+I get exactly the same results.
