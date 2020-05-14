@@ -40,8 +40,12 @@ c. Plot both posterior and likelihood ditributions functions.
 n <- 150
 r <- 29
 p <- seq(0, 1, length.out = 201) 
-likelihood <- dbinom(x=r, size=n, prob=p)
-plot(p, likelihood, 
+likelihood <- function(p) {
+  return(dbinom(x=r, size=n, prob=p))
+}
+likelihood1 <- integrate(likelihood,0,1)$value
+L <- likelihood(p)/likelihood1
+plot(p, L, 
      col = "deepskyblue3", 
      lwd = 1.5,
      type = "l", 
@@ -61,7 +65,6 @@ plot(p, post.norm,
      lwd = 1.5, 
      col = "deepskyblue3", 
      xlim = c(0,1), 
-     ylim = c(0,1.1*max(post.norm)), 
      xlab = "p", 
      ylab = "P(p|r,n,M)",
      main = paste("Posterior with uniform prior, r =", r)) 
@@ -84,9 +87,9 @@ $$
 
 a. Draw and compare the three prior distributions.
 ```{r}
-p <- seq(0, 1, length.out = 201) 
-alpha <- 0.2
-beta <- 0.08 # GIUSTO? <--------------------------------------------
+p <- seq(0, 1, length.out=201) 
+alpha.p <- 4.8
+beta.p <- 19.2
 anna.prior <- function(p, alpha, beta) {
   return(dbeta(p, alpha, beta))
 }
@@ -100,8 +103,8 @@ chris.prior <- function(x){
   return(prior.v)
 }
 
-plot(p, anna.prior(p, alpha, beta),
-     ylim = c(0,3),
+plot(p, anna.prior(p, alpha.p, beta.p),
+     ylim = c(0,5),
      lwd=1.5,
      type = "l",
      xlab = "p",
@@ -112,53 +115,81 @@ plot(p, anna.prior(p, alpha, beta),
 lines(p, benny.prior,
       lwd=1.5,
       type = "l",
-      col = "springgreen3")
+      col = "chartreuse4")
 
 lines(p, chris.prior(p),
       lwd=1.5,
       type = "l",
-      col = "indianred3")
+      col = "coral")
 
 legend("topright", 
        c("Anna", "Benny", "Chris"), 
        lwd = 3, 
-       col = c("deepskyblue3", "springgreen3", "indianred3"))
+       col = c("deepskyblue3", "chartreuse4", "coral"))
 ```
 
 The next day the three students decide to interview a sample of 100 citizens of the small town, asking for their opinion. Out of the interviewed sample, 26 support the building of the new concert hall.
 
-b. Evaluate and draw the three prior distributions.
+b. Evaluate and draw the three posterior distributions.
 ```{r}
-plot(p, anna.prior(p, alpha = 0.26, beta = beta),
-     ylim = c(0,3),
+r <- 26
+n <- 100
+n.sample <- 200 # number of intervals in which we divide [0,1] 
+delta.p <- 1/n.sample # sub-intervals length
+p <- seq(from=1/(2*n.sample), by=1/n.sample, length.out=n.sample)
+
+alpha <- alpha.p + r 
+beta <- beta.p + n - r 
+anna.post<- dbeta(p, alpha, beta)
+
+plot(p, anna.post,
      lwd=1.5,
      type = "l",
      xlab = "p",
      ylab = "Prior",
      col = "deepskyblue3",
-     main = "Prior distributions after the interview")
+     main = "Posterior distributions after the interview")
 
-lines(p, benny.prior,
+benny.post.star <- dbinom(x=r, size=n, prob=p)
+benny.post.norm <- benny.post.star/(delta.p*sum(benny.post.star))
+
+lines(p, benny.post.norm,
       lwd=1.5,
       type = "l",
-      col = "springgreen3")
+      col = "chartreuse4")
 
-lines(p, seq(chris.prior(0.26), chris.prior(0.26), length.out = 201),
+chris.posterior <- function(p) {
+  return(dbinom(r,n,p)*chris.prior(p))
+} 
+norm <- integrate(chris.posterior,0,1)$value 
+chris.posterior.norm <- function(p) {
+  return(dbinom(r,n,p)*chris.prior(p)/norm)
+}
+
+lines(p, chris.posterior.norm(p),
       lwd = 1.5,
       type = "l",
-      col = "indianred3")
+      col = "coral")
 
 legend("topright", 
        c("Anna", "Benny", "Chris"), 
        lwd = 3, 
-       col = c("deepskyblue3", "springgreen3", "indianred3"))
+       col = c("deepskyblue3", "chartreuse4", "coral"))
 ```
 
 c. Give an estimate of the most probable value and the 95% credibility interval.
 ```{r}
-# for a uniform distribution p0 = r/n and sigma = sqrt(r*(n-r)/n)/n
-# for a beta prior p0 = (r+alpha-1)/(n+alpha+beta-2) and sigma = sqrt((alpha+r-1)/(alpha+r))/(alpha+beta+n-2)
-# the 95% credibility interval is given by 3*sigma
+cat("Most probable value according to Anna:", p[which.max(anna.post)],"\n")
+cat("95% credibility interval according to Anna: [x1, x2] = [", p[which.min(abs(0.025-cumsum(anna.post*delta.p)))], 
+    ",", p[which.min(abs(0.975-cumsum(anna.post*delta.p)))], "]", "\n")
+
+cat("Most probable value according to Benny:", p[which.max(benny.post.norm)], "\n")
+cat("95% credibility interval according to Benny: [x1, x2] = [", p[which.min(abs(0.025-cumsum(benny.post.norm*delta.p)))], 
+    ",", p[which.min(abs(0.975-cumsum(benny.post.norm*delta.p)))], "]", "\n")
+
+cat("Most probable value according to Chris:", p[which.max(chris.posterior.norm(p))], "\n")
+cat("95% credibility interval according to Chris: [x1, x2] = [", p[which.min(abs(0.025-cumsum(chris.posterior.norm(p)*delta.p)))], 
+    ",", p[which.min(abs(0.975-cumsum(chris.posterior.norm(p)*delta.p)))], "]")
 ```
 
 ## Exercise 3
@@ -171,9 +202,12 @@ a. Assuming a flat prior, and a beta prior, plot the likelihood, prior and poste
 n <- 30
 r <- 15  # heads
 p <- seq(0, 1, length.out = 201)
-
-likelihood <- dbinom(x=r, size=n, prob=p)
-plot(p, likelihood, 
+likelihood <- function(p) {
+  return(dbinom(x=r, size=n, prob=p))
+}
+likelihood1 <- integrate(likelihood,0,1)$value
+L <- likelihood(p)/likelihood1
+plot(p, L, 
      col = "deepskyblue3", 
      lwd = 1.5,
      type = "l", 
@@ -184,11 +218,11 @@ plot(p, likelihood,
 flat.prior <- dunif(p)
 
 alpha.p <- 0.5 # assume a fair coin
-beta.p <- 0.08
+beta.p <- 0.5
 beta.prior <- dbeta(p, alpha.p, beta.p)
 
 plot(p, beta.prior,
-     col = "indianred3", 
+     col = "coral", 
      type= "l", 
      lty = 1, 
      lwd = 1.5, 
@@ -205,7 +239,7 @@ lines(p, flat.prior,
 legend("topleft", 
        c("Beta prior", "Uniform prior"), 
        lwd = 3, 
-       col = c("indianred3", "deepskyblue3"))
+       col = c("coral", "deepskyblue3"))
 
 n.sample <- 2000 # number of intervals in which we divide [0,1] 
 delta.p <- 1/n.sample # sub-intervals length
@@ -228,41 +262,161 @@ post.norm.b <- post.star.b/(delta.p*sum(post.star.b))
 lines(p, post.norm.b,
      type = "l", 
      lwd = 1.5, 
-     col = "indianred3",
-     #ylim=c(0,1.1*max(post.norm.b)),
+     col = "coral",
      xlab = "p", 
      ylab = "P(p|r,n,M)")
-     #main=paste("Posterior with beta prior, r =",r)) 
 
 legend("topleft", 
        c("Beta prior", "Uniform prior"), 
        lwd = 3, 
-       col = c("indianred3", "deepskyblue3"))
+       col = c("coral", "deepskyblue3"))
 ```
 
 b. Evaluate the most probable value for the coin probability $p$ and, integrating the posterior probability distribution, give an estimate for a 95% credibility interval.
 ```{r}
-p0.u <- r/n
-cat("UNIFORM PRIOR - The most probable value for the coin probability p is:", p0.u, "\n")
+cat("Most probable value using an uniform prior:", p[which.max(post.norm.u)],"\n")
+cat("95% credibility interval using an uniform prior: [x1, x2] = [", p[which.min(abs(0.025-cumsum(post.norm.u*delta.p)))], 
+    ",", p[which.min(abs(0.975-cumsum(post.norm.u*delta.p)))], "]", "\n")
 
-sigma.u <- sqrt(r*(n-r)/n)/n
-cred.int.95.u <- 3*sigma.u
-cat("UNIFORM PRIOR - The 95% credibility interval is:", cred.int.95.u, "\n")
-
-p0.b <- (r+alpha-1)/(n+alpha+beta-2)
-cat("BETA PRIOR - The most probable value for the coin probability p is:", p0.b, "\n")
-
-sigma.b <- sqrt((alpha+r-1)/(alpha+r))/(alpha+beta+n-2)
-cred.int.95.b <- 3*sigma.b
-cat("BETA PRIOR - The 95% credibility interval is:", cred.int.95.b)
+cat("Most probable value using a beta prior:", p[which.max(post.norm.b)], "\n")
+cat("95% credibility interval using a beta prior: [x1, x2] = [", p[which.min(abs(0.025-cumsum(post.norm.b*delta.p)))], 
+    ",", p[which.min(abs(0.975-cumsum(post.norm.b*delta.p)))], "]", "\n")
 ```
 
 c. Repeat the same analysis assuming a sequential analysis of the data. Show how the most probable value and the credibility interval change as a function of the number of coin tosses (i.e. from 1 to 30).
 ```{r}
+outcomes <- c("T", "T", "T", "T", "T", "H", "T", "T", "H", "H", "T", "T", "H", "H", "H",
+              "T", "H", "T", "H", "T", "H", "H", "T", "H", "T", "H", "T", "H", "H", "H")
 
+n <- 30
+n.sample <- 2000
+delta.p <- 1/n.sample
+p <- seq(from=1/(2*n.sample), by=1/n.sample, length.out=n.sample)
+
+r <- 0
+upper.bond <- c()
+lower.bond <- c()
+most.prob <- c()
+pst.norm <- dunif(p)
+plt = FALSE
+for(i in 1:30) {
+  if(outcomes[i]=="H") { 
+    r <- r + 1
+  }
+  pst.star <- dbinom(x = r, size = i, prob = p)*pst.norm
+  pst.norm <- pst.star/(delta.p*sum(pst.star))
+  #cat(p.norm[1:10], "\n")
+  if(plt == TRUE) {
+    plot(p, pst.norm, 
+         type = "l", 
+         lwd = 1.5, 
+         col = "deepskyblue3",
+         xlab = "p",
+         ylab = "P(p|r,n,M)",
+         main=paste("Posterior, r =", r, ", n =", i))
+  }
+  #cat(p.norm[1:10], "\n")
+  x1 <- p[which.min(abs(0.025-cumsum(pst.norm*delta.p)))]
+  x2 <- p[which.min(abs(0.975-cumsum(pst.norm*delta.p)))]
+  most.prob <- c(most.prob, p[which.max(pst.norm)])
+  lower.bond <- c(lower.bond, x1)
+  upper.bond <- c(upper.bond, x2)
+}
+
+#cat(lower.bond, "\n")
+#cat("\n")
+#cat(upper.bond, "\n")
+#cat("\n")
+#cat(most.prob)
+
+plot(seq(1,30), lower.bond,
+     type = "l", 
+     lwd = 1.5, 
+     ylim = c(0,1),
+     col = "deepskyblue3",
+     xlab = "Number of tosses",
+     ylab = "p",
+     main=paste("Evolution of 95% C.I. bonds and most probable value"))
+
+lines(seq(1,30), upper.bond,
+      type = "l",
+      lwd = 1.5,
+      col = "chartreuse4")
+
+lines(seq(1,30), most.prob,
+      type = "l",
+      lwd = 1.5,
+      col = "coral")
+
+legend("topright", 
+       c("lower bound", "upper bound", "most probable value"), 
+       lwd = 3, 
+       col = c("deepskyblue3", "chartreuse4", "coral"))
+
+abline(h = 0.5, lty = 2)
 ```
 
 d. Do you get a different result, by analyzing the data sequentially with respect to a one-step analysis (i.e. considering all the data as a whole)?
 ```{r}
+r <- 0
+upper.bond <- c()
+lower.bond <- c()
+most.prob <- c()
+plt = FALSE
+pst.norm <- dunif(p)
+for(i in 1:30) {
+  if(outcomes[i]=="H") { 
+    r <- r + 1
+  }
+  pst.star <- dbinom(x = r, size = i, prob = p)
+  pst.norm <- pst.star/(delta.p*sum(pst.star))
+  #cat(p.norm[1:10], "\n")
+  if(plt == TRUE) {
+  plot(p, pst.norm, 
+       type = "l", 
+       lwd = 1.5, 
+       col = "deepskyblue3",
+       xlab = "p",
+       ylab = "P(p|r,n,M)",
+       main=paste("Posterior, r =", r, ", n =", i))
+  }
+  #cat(p.norm[1:10], "\n")
+  x1 <- p[which.min(abs(0.025-cumsum(pst.norm*delta.p)))]
+  x2 <- p[which.min(abs(0.975-cumsum(pst.norm*delta.p)))]
+  most.prob <- c(most.prob, p[which.max(pst.norm)])
+  lower.bond <- c(lower.bond, x1)
+  upper.bond <- c(upper.bond, x2)
+}
 
+#cat(lower.bond, "\n")
+#cat("\n")
+#cat(upper.bond, "\n")
+#cat("\n")
+#cat(most.prob)
+
+plot(seq(1,30), lower.bond,
+     type = "l", 
+     lwd = 1.5, 
+     ylim = c(0,1),
+     col = "deepskyblue3",
+     xlab = "Number of tosses",
+     ylab = "p",
+     main=paste("Evolution of 95% C.I. bonds and most probable value"))
+
+lines(seq(1,30), upper.bond,
+      type = "l",
+      lwd = 1.5,
+      col = "chartreuse4")
+
+lines(seq(1,30), most.prob,
+      type = "l",
+      lwd = 1.5,
+      col = "coral")
+
+legend("topright", 
+       c("lower bound", "upper bound", "most probable value"), 
+       lwd = 3, 
+       col = c("deepskyblue3", "chartreuse4", "coral"))
+
+abline(h = 0.5, lty = 2)
 ```
