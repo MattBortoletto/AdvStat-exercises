@@ -90,16 +90,16 @@ a. Draw and compare the three prior distributions.
 p <- seq(0, 1, length.out=201) 
 alpha.p <- 4.8
 beta.p <- 19.2
-anna.prior <- function(p, alpha, beta) {
+anna.prior <- function(p, alpha = alpha.p, beta = beta.p) {
   return(dbeta(p, alpha, beta))
 }
 
 benny.prior <- dunif(p)
 
-chris.prior <- function(x){
-  prior.v <- ifelse(x >= 0 & x < 0.1, 20*p, 
-                    ifelse(x >= 0.1 & x < 0.3, 2,
-                           ifelse(x >= 0.3 & x < 0.5, 5-10*x, 0)))
+chris.prior <- function(p){ # NON E' NORMALIZZATA! ho aggiunto 0.7 per normalizzare <-----------------------
+  prior.v <- ifelse(p >= 0 & p < 0.1, 20*p/0.7, 
+                    ifelse(p >= 0.1 & p < 0.3, 2/0.7,
+                           ifelse(p >= 0.3 & p < 0.5, (5-10*p)/0.7, 0)))
   return(prior.v)
 }
 
@@ -117,7 +117,7 @@ lines(p, benny.prior,
       type = "l",
       col = "chartreuse4")
 
-lines(p, chris.prior(p),
+lines(p, chris.prior(p), 
       lwd=1.5,
       type = "l",
       col = "coral")
@@ -161,9 +161,9 @@ lines(p, benny.post.norm,
 chris.posterior <- function(p) {
   return(dbinom(r,n,p)*chris.prior(p))
 } 
-norm <- integrate(chris.posterior,0,1)$value 
+norm <- integrate(chris.posterior, 0, 1)$value 
 chris.posterior.norm <- function(p) {
-  return(dbinom(r,n,p)*chris.prior(p)/norm)
+  return(dbinom(r, n, p)*chris.prior(p)/norm)
 }
 
 lines(p, chris.posterior.norm(p),
