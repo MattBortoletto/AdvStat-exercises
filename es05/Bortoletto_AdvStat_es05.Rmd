@@ -96,7 +96,7 @@ anna.prior <- function(p, alpha = alpha.p, beta = beta.p) {
 
 benny.prior <- dunif(p)
 
-chris.prior <- function(p){ # NON E' NORMALIZZATA! ho aggiunto 0.7 per normalizzare <-----------------------
+chris.prior <- function(p){ # normalized
   prior.v <- ifelse(p >= 0 & p < 0.1, 20*p/0.7, 
                     ifelse(p >= 0.1 & p < 0.3, 2/0.7,
                            ifelse(p >= 0.3 & p < 0.5, (5-10*p)/0.7, 0)))
@@ -217,8 +217,8 @@ plot(p, L,
 
 flat.prior <- dunif(p)
 
-alpha.p <- 0.5 # assume a fair coin
-beta.p <- 0.5
+alpha.p <- 5 # assume a fair coin
+beta.p <- 5
 beta.prior <- dbeta(p, alpha.p, beta.p)
 
 plot(p, beta.prior,
@@ -306,7 +306,7 @@ for(i in 1:30) {
   }
   pst.star.u <- dbinom(x = r, size = i, prob = p)
   pst.norm.u <- pst.star.u/(delta.p*sum(pst.star.u))
-  pst.star.b <- dbeta(p, 0.5 + r, 0.5 + i - r)
+  pst.star.b <- dbeta(p, 5 + r, 5 + i - r)
   pst.norm.b <- pst.star.b/(delta.p*sum(pst.star.b))
   if(plt == TRUE) {
     plot(p, pst.norm.u, 
@@ -401,4 +401,4 @@ abline(h = 0.5, lty = 2)
 
 d. Do you get a different result, by analyzing the data sequentially with respect to a one-step analysis (i.e. considering all the data as a whole)?
 
-I get exactly the same results.
+I get exactly the same results, as expected, since each toss is independent.
