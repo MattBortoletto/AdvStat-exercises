@@ -300,6 +300,7 @@ upper.bond.b <- c()
 lower.bond.b <- c()
 most.prob.b <- c()
 plt = FALSE
+
 for(i in 1:30) {
   if(outcomes[i]=="H") { 
     r <- r + 1
@@ -339,12 +340,12 @@ for(i in 1:30) {
 }
 
 cat("-- UNIFORM PRIOR \n")
-cat("[x1, x2] = [", lower.bond.u[30], ",", upper.bond.u[30], "] \n")
-cat("Most probable value =", most.prob.u[30], "\n")
+cat("[x1, x2] = [", tail(lower.bond.u, 1), ",", tail(upper.bond.u, 1), "] \n")
+cat("Most probable value =", tail(most.prob.u, 1), "\n")
 cat("\n")
 cat("-- BETA PRIOR \n")
-cat("[x1, x2] = [", lower.bond.b[30], ",", upper.bond.b[30], "] \n")
-cat("Most probable value =", most.prob.b[30])
+cat("[x1, x2] = [", tail(lower.bond.b, 1), ",", tail(upper.bond.b, 1), "] \n")
+cat("Most probable value =", tail(most.prob.b, 1))
 
 plot(seq(1,30), lower.bond.u,
      type = "l", 
@@ -401,4 +402,4 @@ abline(h = 0.5, lty = 2)
 
 d. Do you get a different result, by analyzing the data sequentially with respect to a one-step analysis (i.e. considering all the data as a whole)?
 
-I get exactly the same results, as expected, since each toss is independent.
+I get almost the same results, as expected, since each toss is independent.

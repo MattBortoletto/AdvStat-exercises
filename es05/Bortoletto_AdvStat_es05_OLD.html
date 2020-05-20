@@ -657,7 +657,6 @@ upper.bond.b &lt;- c()
 lower.bond.b &lt;- c()
 most.prob.b &lt;- c()
 plt = FALSE
-
 for(i in 1:30) {
   if(outcomes[i]==&quot;H&quot;) { 
     r &lt;- r + 1
@@ -698,16 +697,16 @@ for(i in 1:30) {
 
 cat(&quot;-- UNIFORM PRIOR \n&quot;)</code></pre>
 <pre><code>## -- UNIFORM PRIOR</code></pre>
-<pre class="r"><code>cat(&quot;[x1, x2] = [&quot;, tail(lower.bond.u, 1), &quot;,&quot;, tail(upper.bond.u, 1), &quot;] \n&quot;)</code></pre>
+<pre class="r"><code>cat(&quot;[x1, x2] = [&quot;, lower.bond.u[30], &quot;,&quot;, upper.bond.u[30], &quot;] \n&quot;)</code></pre>
 <pre><code>## [x1, x2] = [ 0.33025 , 0.66925 ]</code></pre>
-<pre class="r"><code>cat(&quot;Most probable value =&quot;, tail(most.prob.u, 1), &quot;\n&quot;)</code></pre>
+<pre class="r"><code>cat(&quot;Most probable value =&quot;, most.prob.u[30], &quot;\n&quot;)</code></pre>
 <pre><code>## Most probable value = 0.49975</code></pre>
 <pre class="r"><code>cat(&quot;\n&quot;)</code></pre>
 <pre class="r"><code>cat(&quot;-- BETA PRIOR \n&quot;)</code></pre>
 <pre><code>## -- BETA PRIOR</code></pre>
-<pre class="r"><code>cat(&quot;[x1, x2] = [&quot;, tail(lower.bond.b, 1), &quot;,&quot;, tail(upper.bond.b, 1), &quot;] \n&quot;)</code></pre>
+<pre class="r"><code>cat(&quot;[x1, x2] = [&quot;, lower.bond.b[30], &quot;,&quot;, upper.bond.b[30], &quot;] \n&quot;)</code></pre>
 <pre><code>## [x1, x2] = [ 0.34775 , 0.65175 ]</code></pre>
-<pre class="r"><code>cat(&quot;Most probable value =&quot;, tail(most.prob.b, 1))</code></pre>
+<pre class="r"><code>cat(&quot;Most probable value =&quot;, most.prob.b[30])</code></pre>
 <pre><code>## Most probable value = 0.49975</code></pre>
 <pre class="r"><code>plot(seq(1,30), lower.bond.u,
      type = &quot;l&quot;, 
@@ -764,7 +763,7 @@ abline(h = 0.5, lty = 2)</code></pre>
 <ol start="4" style="list-style-type: lower-alpha">
 <li>Do you get a different result, by analyzing the data sequentially with respect to a one-step analysis (i.e. considering all the data as a whole)?</li>
 </ol>
-<p>I get almost the same results, as expected, since each toss is independent.</p>
+<p>I get exactly the same results, as expected, since each toss is independent.</p>
 </div>
 
 

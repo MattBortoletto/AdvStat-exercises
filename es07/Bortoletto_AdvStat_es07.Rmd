@@ -10,3 +10,208 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ## Exercise 1
+A researcher has collected $n = 15$ observations that are supposed to come from a Normal distribution with known variance $\sigma^2 = 16$:
+
+`26.8, 26.3, 28.3, 28.5, 16.3, 31.9, 28.5, 27.2, 20.9, 27.5, 28.0, 18.6, 22.3, 25.0, 31.5`
+
+Assuming a normal prior for $\mu$, $\mathcal{N}(m=20, s^2=25)$:
+
+a. Determine the posterior distribution $P(\mu | y_1,\dots,y_{15})$ and find the posterior mean and standard deviation.
+
+```{r}
+library(latex2exp)
+
+s.known <- 4
+N <- 15
+data <- c(26.8, 26.3, 28.3, 28.5, 16.3, 31.9, 28.5, 27.2, 20.9, 27.5, 28.0, 18.6, 22.3, 25.0, 31.5)
+m.data <- mean(data)
+cat("Mean of the data = ", m.data, "\n")
+s.prior <- 5
+m.prior <- 20
+s.post <- s.known*s.prior/(sqrt(s.known^2+N*s.prior^2))
+m.post <- (1/s.prior^2)*m.prior/(1/s.known^2 + 1/s.prior^2) + (N/s.known^2)*m.data/(N/s.known^2 + 1/s.prior^2)
+
+x <- seq(0, 60, 0.1)
+post <- dnorm(x, m.post, s.post)
+
+cat("Posterior mean =", m.post, "\n")
+cat("Posterior standard deviation =", s.post)
+```
+
+b. Find the 95% credibility interval for $\mu$.
+
+```{r}
+x1 <- x[which.min(abs(0.025-cumsum(post)*0.1))]
+x2 <- x[which.min(abs(0.975-cumsum(post)*0.1))]
+cat("The 95% credibility interval is given by [x1, x2] = [", x1, ",", x2, "]")
+```
+
+c. Plot the posterior distribution, indicating on the same plot: the mean value, the standard deviation, and the 95% credibility interval.
+
+```{r}
+plot(x, post,
+     type = "l",
+     xlim = c(25, 40),
+     col = "royalblue",
+     xlab = TeX("$\\mu$"),
+     ylab = TeX("P($\\mu$ | y_1,...,y_{15} )"),
+     main = "Posterior distribution")
+
+text(39, 0.38, paste("mean =", round(m.post,0)))
+text(39, 0.34, paste("std =", round(s.post,1)))
+abline(v = m.post, lty = 2)
+#polygon(c(x1, x2), c(post[x1], 0), col="red")
+x.between = x[x>x1&x<x2]
+dens.between = post[x>x1&x<x2]
+polygon(c(x.between,rev(x.between)),c(rep(0,length(x.between)),rev(dens.between)),col="royalblue",density=10)
+```
+
+d. repeat the analysis using a different prior $\mathcal{N}(m=30, s^2=16)$ and plot, on the same graph the likelihood, the prior and the posterior.
+
+```{r}
+s.prior <- 4
+m.prior <- 30
+
+prior.new <- dnorm(x, m.prior, s.prior)
+
+#likelihood <- function(x) {
+#return(cumprod(dnorm(x, m.prior, s.known))) # ??? <------------------------------------ 
+#}
+
+s.post <- s.known*s.prior/(sqrt(s.known^2+N*s.prior^2))
+m.post <- (1/s.prior^2)*m.prior/(1/s.known^2 + 1/s.prior^2) + (N/s.known^2)*m.data/(N/s.known^2 + 1/s.prior^2)
+
+post.new <- dnorm(x, m.post, s.post)
+
+plot(x, post.new,
+     type = "l",
+     col = "royalblue",
+     xlab = TeX("$\\mu$"),
+     ylab = "P",
+     main = "Posterior distribution")
+
+lines(x, prior.new,
+      type = "l",
+      col = "coral2")
+
+#lines(x, likelihood(x),
+#      type = "l",
+#      col = "springgreen3")
+```
+
+e. Compare the credibility intervals obtained with the two priors.
+
+```{r}
+x1.new <- x[which.min(abs(0.025-cumsum(post.new)*0.1))]
+x2.new <- x[which.min(abs(0.975-cumsum(post.new)*0.1))]
+cat("The 95% credibility interval is given by [x1, x2] = [", x1.new, ",", x2.new, "]")
+```
+
+
+## Exercise 2
+A researcher has collected $n = 16$ observations that are supposed to come from a Normal distribution with known variance $\sigma^2 = 4$:
+
+`4.09, 4.68, 1.87, 2.62, 5.58, 8.68, 4.07, 4.78, 4.79, 4.49, 5.85, 5.09, 2.40, 6.27, 6.30, 4.47`
+
+Assuming the prior is a step function:
+
+$$
+g(\mu) = 
+\begin{cases}
+  \mu   & \text{for } 0<\mu\le 3 \\
+  3     & \text{for } 3<\mu\le 5 \\
+  8-\mu & \text{for } 5<\mu\le 8 \\
+  0     & \text{for } \mu > 8
+\end{cases}
+$$
+
+a. Find the posterior distribution, the posterior mean and standard deviation.
+
+```{r}
+n <- 16
+s.known <- 2
+data <- c(4.09, 4.68, 1.87, 2.62, 5.58, 8.68, 4.07, 4.78, 4.79, 4.49, 5.85, 5.09, 2.40, 6.27, 6.30, 4.47)
+
+prior <- function(mu) {
+  val <- ifelse(0<mu<=3, mu,
+                ifelse(3<mu<=5, 3,
+                       ifelse(5<mu<=8, 8 - mu, 0)))
+  return(val)
+}
+
+
+```
+
+b. Find the 95% credibility interval for $\mu$.
+
+```{r}
+
+```
+
+c. Plot the posterior distribution, indicating on the same plot: the mean value, the standard deviation, and the 95% credibility interval.
+
+```{r}
+
+```
+
+d. Plot, on the same graph, the prior, the likelihood and the posterior distribution.
+
+```{r}
+
+```
+
+
+## Exercise 3
+In a study on water quality of streams, a high level of bacter X was defined as a level greater than 100 per 100 ml of stream water. $n = 116$ samples were taken from streams having a high environmental impact on pandas. Out of these, $y = 11$ had a high bacter X level.
+
+Indicating with $p$ the probability that a sample of water taken from the stream has a high bacter X level:
+
+a. Find the frequentist estimator for $p$.
+
+```{r}
+
+```
+
+b. Using a Beta$(1,10)$ prior for $p$, calculate and posterior distribution $P(p|y)$.
+
+```{r}
+
+```
+
+c. Find the bayesian estimator for $p$, the posterior mean and variance, and a 95% credible interval.
+
+```{r}
+
+```
+
+d. test the hypothesis $H_0 : p = 0.1$ versus $H_1 : p \ne 0.1$ at 5% level of significance with both the frequentist and bayesian approaches.
+
+```{r}
+
+```
+
+A new measurement, performed one month later on $n = 165$ water samples, gives $y = 9$ high bacter X level.
+
+e. Find the frequentist estimator for $p$.
+
+```{r}
+
+```
+
+f. Find a bayesian estimator for $p$, assuming both a Beta$(1,10)$ prior for $p$, and the posterior probability of the older measurement as the prior for the new one.
+
+```{r}
+
+```
+
+g. Find the bayesian estimator for $p$, the posterior mean and variance, and a 95% credible interval.
+
+```{r}
+
+```
+
+h. test the hypothesis $H_0 : p = 0.1$ versus $H_1 : p \ne 0.1$ at 5% level of significance with both the frequentist and bayesian approaches.
+
+```{r}
+
+```
