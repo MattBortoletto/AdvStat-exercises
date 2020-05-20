@@ -299,31 +299,51 @@ most.prob.u <- c()
 upper.bond.b <- c()
 lower.bond.b <- c()
 most.prob.b <- c()
+s <- 0
 plt = FALSE
 
 for(i in 1:30) {
+  if(outcomes[i]=="T") {
+    s <- 0
+  }
   if(outcomes[i]=="H") { 
     r <- r + 1
+    s <- 1
   }
-  pst.star.u <- dbinom(x = r, size = i, prob = p)
-  pst.norm.u <- pst.star.u/(delta.p*sum(pst.star.u))
-  pst.star.b <- dbeta(p, 5 + r, 5 + i - r)
-  pst.norm.b <- pst.star.b/(delta.p*sum(pst.star.b))
-  if(plt == TRUE) {
-    plot(p, pst.norm.u, 
-         type = "l", 
-         lwd = 1.5, 
-         col = "deepskyblue3",
-         xlab = "p",
-         ylab = "P(p|r,n,M)",
-         main=paste("Posterior for uniform prior, r =", r, ", n =", i))
-    plot(p, pst.norm.b, 
-         type = "l", 
-         lwd = 1.5, 
-         col = "deepskyblue3",
-         xlab = "p",
-         ylab = "P(p|r,n,M)",
-         main=paste("Posterior for beta prior, r =", r, ", n =", i))
+  if(i == 1) {
+    pst.star.u <- dbinom(x = r, size = i, prob = p)
+    pst.norm.u <- pst.star.u/(delta.p*sum(pst.star.u))
+    prior.u <- pst.norm.u
+    
+    pst.norm.b <- dbeta(p, 5 + s, 6 - s)
+    prior.b <- pst.norm.b
+  }
+  else {
+    likelihood <- dbinom(s, 1, p)
+    pst.star.u <- likelihood*prior.u
+    pst.norm.u <- pst.star.u/(delta.p*sum(pst.star.u))
+    prior.u <- pst.norm.u
+    
+    pst.star.b <- likelihood*prior.b
+    pst.norm.b <- pst.star.b/(delta.p*sum(pst.star.b))
+    prior.b <- pst.norm.b
+    
+    if(plt == TRUE) {
+      plot(p, pst.norm.u, 
+           type = "l", 
+           lwd = 1.5, 
+           col = "deepskyblue3",
+           xlab = "p",
+           ylab = "P(p|r,n,M)",
+           main=paste("Posterior for uniform prior, r =", r, ", n =", i))
+      plot(p, pst.norm.b, 
+           type = "l", 
+           lwd = 1.5, 
+           col = "deepskyblue3",
+           xlab = "p",
+           ylab = "P(p|r,n,M)",
+           main=paste("Posterior for beta prior, r =", r, ", n =", i))
+    }
   }
   # uniform prior
   x1.u <- p[which.min(abs(0.025-cumsum(pst.norm.u*delta.p)))]
@@ -402,4 +422,4 @@ abline(h = 0.5, lty = 2)
 
 d. Do you get a different result, by analyzing the data sequentially with respect to a one-step analysis (i.e. considering all the data as a whole)?
 
-I get almost the same results, as expected, since each toss is independent.
+I get exactly the same results, as expected, since each toss is independent.
