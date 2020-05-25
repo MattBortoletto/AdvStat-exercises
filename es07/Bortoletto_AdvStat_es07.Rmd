@@ -29,9 +29,11 @@ cat("Mean of the data = ", m.data, "\n")
 s.prior <- 5
 m.prior <- 20
 s.post <- s.known*s.prior/(sqrt(s.known^2+N*s.prior^2))
-m.post <- (1/s.prior^2)*m.prior/(1/s.known^2 + 1/s.prior^2) + (N/s.known^2)*m.data/(N/s.known^2 + 1/s.prior^2)
+#m.post <- (1/s.prior^2)*m.prior/(1/s.known^2 + 1/s.prior^2) + (N/s.known^2)*m.data/(N/s.known^2 + 1/s.prior^2)
+#s.post <- sqrt((1/s.prior))
+m.post <- (s.post^2)*(m.prior/s.prior^2 + m.data*N/s.known^2)
 
-x <- seq(0, 60, 0.1)
+x <- seq(1, 60, 0.1)
 post <- dnorm(x, m.post, s.post)
 
 cat("Posterior mean =", m.post, "\n")
@@ -51,19 +53,19 @@ c. Plot the posterior distribution, indicating on the same plot: the mean value,
 ```{r}
 plot(x, post,
      type = "l",
-     xlim = c(25, 40),
+     xlim = c(20, 30),
      col = "royalblue",
      xlab = TeX("$\\mu$"),
-     ylab = TeX("P($\\mu$ | y_1,...,y_{15} )"),
+     ylab = TeX("P($\\mu$ | y_1,...,y_{15})"),
      main = "Posterior distribution")
 
 text(39, 0.38, paste("mean =", round(m.post,0)))
 text(39, 0.34, paste("std =", round(s.post,1)))
-abline(v = m.post, lty = 2)
-#polygon(c(x1, x2), c(post[x1], 0), col="red")
-x.between = x[x>x1&x<x2]
-dens.between = post[x>x1&x<x2]
-polygon(c(x.between,rev(x.between)),c(rep(0,length(x.between)),rev(dens.between)),col="royalblue",density=10)
+abline(v = m.post, lty = 2, col = "royalblue3")
+x.between = x[x>x1 & x<x2]
+dens.between = post[x>x1 & x<x2]
+polygon(c(x.between, rev(x.between)), c(rep(0, length(x.between)), rev(dens.between)), col="royalblue", density=10)
+legend("topright", legend = c("Posterior", "Mean", "95% C.I."), fill = c("royalblue", "royalblue3", "royalblue"))
 ```
 
 d. repeat the analysis using a different prior $\mathcal{N}(m=30, s^2=16)$ and plot, on the same graph the likelihood, the prior and the posterior.
@@ -74,29 +76,37 @@ m.prior <- 30
 
 prior.new <- dnorm(x, m.prior, s.prior)
 
-#likelihood <- function(x) {
-#return(cumprod(dnorm(x, m.prior, s.known))) # ??? <------------------------------------ 
-#}
+likelihood <- Vectorize(function(mu, s) {
+  l <- 1/(sqrt(2*pi)*s)*exp(-(sum(data-mu)^2)/(2*s^2))
+  return(l)
+})
 
 s.post <- s.known*s.prior/(sqrt(s.known^2+N*s.prior^2))
-m.post <- (1/s.prior^2)*m.prior/(1/s.known^2 + 1/s.prior^2) + (N/s.known^2)*m.data/(N/s.known^2 + 1/s.prior^2)
+#m.post <- (1/s.prior^2)*m.prior/(1/s.known^2 + 1/s.prior^2) + (N/s.known^2)*m.data/(N/s.known^2 + 1/s.prior^2)
+m.post <- (s.post^2)*(m.prior/s.prior^2 + m.data*N/s.known^2)
 
-post.new <- dnorm(x, m.post, s.post)
+likelihood.norm <- likelihood(x, s.known)/(sum(likelihood(x, s.known))*0.1)
 
-plot(x, post.new,
+post.new <- dnorm(x, m.post, s.post)/sum(dnorm(x, m.post, s.post)*0.1)
+
+#post.new1 <- prior.new*likelihood(x, s.known)/(sum(prior.new*likelihood(x, s.known))*0.1)
+
+plot(x, likelihood.norm,
      type = "l",
      col = "royalblue",
      xlab = TeX("$\\mu$"),
-     ylab = "P",
+     ylab = "Posterior",
      main = "Posterior distribution")
 
 lines(x, prior.new,
       type = "l",
       col = "coral2")
 
-#lines(x, likelihood(x),
-#      type = "l",
-#      col = "springgreen3")
+lines(x, post.new,
+      type = "l",
+      col = "springgreen3")
+
+legend("topright", c("Likelihood", "Prior", "Posterior"), col = c("royalblue", "coral2", "springgreen3"), lwd = 3)
 ```
 
 e. Compare the credibility intervals obtained with the two priors.
@@ -133,31 +143,93 @@ s.known <- 2
 data <- c(4.09, 4.68, 1.87, 2.62, 5.58, 8.68, 4.07, 4.78, 4.79, 4.49, 5.85, 5.09, 2.40, 6.27, 6.30, 4.47)
 
 prior <- function(mu) {
-  val <- ifelse(0<mu<=3, mu,
-                ifelse(3<mu<=5, 3,
-                       ifelse(5<mu<=8, 8 - mu, 0)))
+  val <- ifelse(0 < mu & mu <= 3, mu,
+                ifelse(3 < mu & mu <= 5, 3,
+                       ifelse(5 < mu & mu <= 8, 8 - mu, 0)))
   return(val)
 }
 
+mu <- seq(0,10,0.01)
 
+#like <- dnorm(mu, mean = mean(data), sd = s.known)/sum(dnorm(mu, mean = mean(data), sd = s.known)*0.01)
+
+likelihood <- Vectorize(function(mu, s) {
+  l <- 1/(sqrt(2*pi)*s)*exp(-(sum(data-mu)^2)/(2*s^2))
+  return(l)
+})
+
+likelihood.norm <- likelihood(mu, s.known)/(sum(likelihood(mu, s.known))*0.01)
+post.star <- likelihood.norm*prior(mu)
+post.norm <- post.star/(sum(post.star)*0.01)
+
+mu.max <- mu[which.max(post.norm)]
+
+cat("The maximum of the posterior is:", mu.max)
 ```
 
 b. Find the 95% credibility interval for $\mu$.
 
 ```{r}
-
+mu1 <- mu[which.min(abs(0.025-cumsum(post.norm)*0.01))]
+mu2 <- mu[which.min(abs(0.975-cumsum(post.norm)*0.01))]
+cat("The 95% credibility interval is given by [x1, x2] = [", mu1, ",", mu2, "]")
 ```
 
 c. Plot the posterior distribution, indicating on the same plot: the mean value, the standard deviation, and the 95% credibility interval.
 
 ```{r}
+options(repr.plot.width=12, repr.plot.height=10)
+# Code for polygon function
+mu.p <- seq(mu1, mu2, 0.01)
 
+x <- c(mu1, mu.p, mu2)
+
+likelihood.norm.95 <- likelihood(mu.p, s.known)/(sum(likelihood(mu.p, s.known))*0.01)
+post.star.95 <- likelihood.norm.95*prior(mu.p)
+post.norm.95 <- post.star.95/(sum(post.star.95)*0.01)
+
+y <- c(0, post.norm.95, 0)
+
+plot(mu, post.norm, 
+     xaxs='i', yaxs='i', col='navy', 
+     type='l', lty=1, lwd=3, 
+     xlab="p",
+     xlim = c(4,6),
+     ylim = c(0,5),
+     ylab=expression(paste("P","(p | y,n,M)")),
+     main='Posterior',
+     pch=2)
+
+polygon(x=x, y=y, col='seagreen1', pch=1)
+abline(v=mu.max,    col="grey40", lty=2, pch=1)
+abline(v=mu1, col="grey40", lty=2, pch=1)
+abline(v=mu2, col="grey40", lty=2, pch=1)
+text(mu.max, 4, labels = expression("x"["m"]),     pos = 1, cex = 2, col="red", xpd=TRUE)
+text(mu1, 4, labels = expression("x"["2.5%"]),  pos = 1, cex = 2, col="red", xpd=TRUE)
+text(mu2, 4, labels = expression("x"["97.5%"]), pos = 1, cex = 2, col="red", xpd=TRUE)
 ```
 
 d. Plot, on the same graph, the prior, the likelihood and the posterior distribution.
 
 ```{r}
-
+plot(mu, post.norm,
+     type = "l",
+     lty = 2,
+     col = "blue",
+     xlab = TeX("$\\mu$"),
+     ylab = "P",
+     main = "Posterior, prior and likelihood distributions")
+lines(mu, prior(mu)/15, # normalization
+      type = "l",
+      col = "red")
+lines(mu, likelihood.norm,
+      type = "l",
+      lty = 1,
+      col = "darkolivegreen4")
+legend("topright", 
+       c("Posterior", "Prior", "Likelihood"), 
+       lwd = 3, 
+       col = c("blue", "red", "darkolivegreen4"))
 ```
 
 
@@ -169,19 +241,44 @@ Indicating with $p$ the probability that a sample of water taken from the stream
 a. Find the frequentist estimator for $p$.
 
 ```{r}
-
+n <- 116
+y <- 11
+p.freq <- 11/116
+cat("The frequenty estimator is p =", p.freq)
 ```
 
-b. Using a Beta$(1,10)$ prior for $p$, calculate and posterior distribution $P(p|y)$.
+b. Using a Beta$(1,10)$ prior for $p$, calculate and plot posterior distribution $P(p|y)$.
 
 ```{r}
+alpha <- 1
+beta <- 10
+n.sample <- 2000
+delta <- 1/n.sample
+p <- seq(from=1/(2*n.sample), by=1/n.sample, length.out=n.sample)
 
+prior <- dbeta(p, alpha, beta)
+
+likelihood <- dbinom(y, n, p)
+
+post.star <- dbeta(p, alpha + y, beta + n - y)
+post.norm <- post.star/(sum(post.star)*delta) 
+
+plot(p, post.norm, 
+     type = "l",
+     col = "red",
+     ylab = "P(p|y)",
+     xlab = "p",
+     main = "Posterior")
 ```
 
 c. Find the bayesian estimator for $p$, the posterior mean and variance, and a 95% credible interval.
 
 ```{r}
-
+post.mean <- (alpha + y)/(alpha + beta + n)
+#post.m <- sum(p*post.norm)/n.sample
+post.var <- (1/(n+2)^2)*n*post.mean*(1-post.mean)
+cat("The bayesian estimator is the posterior mean:", post.mean, "\n")
+cat("The variance is:", post.var)
 ```
 
 d. test the hypothesis $H_0 : p = 0.1$ versus $H_1 : p \ne 0.1$ at 5% level of significance with both the frequentist and bayesian approaches.

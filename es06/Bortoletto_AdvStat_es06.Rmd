@@ -21,10 +21,10 @@ a. Suppose a uniform prior distribution for the parameter $\mu$.
 library(latex2exp)
 
 counts <- c(4, 1, 3, 1, 3)
-delta.mu <- 0.01
-mu <- seq(0,10,delta.mu)
+delta.mu <- 1
+mu <- seq(0,10,length.out=200)
 
-u.post <- dgamma(mu, shape = sum(counts)+1, scale = 1/5) 
+u.post <- dgamma(mu, shape = sum(counts)+1, scale = 1/5)/sum(dgamma(mu, shape = sum(counts)+1, scale = 1/5)*delta.mu)
 
 plot(mu, u.post,
      lwd=1.5,
@@ -34,8 +34,23 @@ plot(mu, u.post,
      col = "mediumpurple3",
      main = "Posterior obtained using uniform prior")
 
-# Evaluate mean, median and variance, both analytically and numerically in `R`. <------------------
+cat("-- UNIFORM PRIOR \n")
+u.mean <- sum(mu*u.post)
+cat("The mean is:", u.mean, "\n")
+#u.median <- mu[which.max(cumsum(u.post)>0.5)]
+u.median <- qgamma(0.5, shape = sum(counts)+1, scale = 1/5)
+cat("The median is:", u.median, "\n")
+u.variance <- sum(u.post*mu^2) - u.mean^2 
+cat("The variance is:", u.variance)
 ```
+Analytically:
+
+$$
+\bar{\mu} = \frac{\alpha}{\beta} = \frac{13}{5} = 2.6
+$$
+$$
+\text{Var}(\mu) = \frac{\alpha}{\beta^2} = \frac{13}{5^2} = 0.52
+$$
 
 b. Suppose a Jeffrey’s prior for the parameter $\mu$. 
 
@@ -43,7 +58,7 @@ b. Suppose a Jeffrey’s prior for the parameter $\mu$.
     - Evaluate mean, median and variance, both analytically and numerically in `R`.
 
 ```{r}
-j.post <- dgamma(mu, shape = sum(counts)+0.5, scale = 1/5) 
+j.post <- dgamma(mu, shape = sum(counts)+0.5, scale = 1/5)/sum(dgamma(mu, shape = sum(counts)+0.5, scale = 1/5)*delta.mu) 
 
 plot(mu, j.post,
      lwd=1.5,
@@ -53,16 +68,44 @@ plot(mu, j.post,
      col = "mediumpurple3",
      main = "Posterior obtained using Jeffrey's prior")
 
-# Evaluate mean, median and variance, both analytically and numerically in `R`. <------------------
+cat("-- JEFFREY'S PRIOR \n")
+j.mean <- sum(mu*j.post)
+cat("The mean is:", j.mean, "\n")
+#j.median <- mu[which.max(cumsum(j.post)>0.5)]
+j.median <- qgamma(0.5, shape = sum(counts)+0.5, scale = 1/5)
+cat("The median is:", j.median, "\n")
+j.variance <- sum(j.post*mu^2) - j.mean^2 
+cat("The variance is:", j.variance)
 ```
+Analytically:
+
+$$
+\bar{\mu} = \frac{\alpha}{\beta} = \frac{25}{2\cdot5} = 2.5
+$$
+
+$$
+\text{Var}(\mu) = \frac{\alpha}{\beta^2} = \frac{25}{2\cdot5^2} = 0.5
+$$
 
 c. Evaluate a 95% credibility interval for the results obtained with both priors. Compare the result with that obtained using a normal approximation for the posterior distribution, with the same mean and standard deviation.
 
 ```{r}
+u.norm.post <- dnorm(mu, mean = u.mean, sd = sqrt(u.variance))/sum(dnorm(mu, mean = u.mean, sd = sqrt(u.variance))*delta.mu)
+j.norm.post <- dnorm(mu, mean = j.mean, sd = sqrt(j.variance))/sum(dnorm(mu, mean = u.mean, sd = sqrt(u.variance))*delta.mu)
+
+cat("-- UNIFORM PRIOR \n")
 cat("95% credibility interval with uniform prior: [x1, x2] = [", mu[which.min(abs(0.025-cumsum(u.post)*delta.mu))], 
     ",", mu[which.min(abs(0.975-cumsum(u.post)*delta.mu))], "]", "\n")
-cat("95% credibility interval with uniform prior: [x1, x2] = [", mu[which.min(abs(0.025-cumsum(j.post)*delta.mu))], 
-    ",", mu[which.min(abs(0.975-cumsum(j.post)*delta.mu))], "]")
+cat("95% credibility interval for the normal approximation: [x1, x2] = [",
+    mu[which.min(abs(0.025-cumsum(u.norm.post)*delta.mu))], 
+    ",", mu[which.min(abs(0.975-cumsum(u.norm.post)*delta.mu))], "]", "\n")
+cat("\n")
+cat("-- JEFFREY'S PRIOR \n")
+cat("95% credibility interval with Jeffrey's prior: [x1, x2] = [", mu[which.min(abs(0.025-cumsum(j.post)*delta.mu))], 
+    ",", mu[which.min(abs(0.975-cumsum(j.post)*delta.mu))], "]", "\n")
+cat("95% credibility interval for the normal approximation: [x1, x2] = [", 
+    mu[which.min(abs(0.025-cumsum(j.norm.post)*delta.mu))], 
+    ",", mu[which.min(abs(0.975-cumsum(j.norm.post)*delta.mu))], "]")
 ```
 
 
