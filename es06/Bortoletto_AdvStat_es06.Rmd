@@ -300,7 +300,7 @@ for(w in w.values) {
        xlim = range(xplot),
        ylim = range(c(splot, ddat)))
 
-  xdat.off <- xdat - 0.25
+  xdat.off <- xdat - w/2
 
   lines(xdat.off, ddat, 
        type = "s", 
