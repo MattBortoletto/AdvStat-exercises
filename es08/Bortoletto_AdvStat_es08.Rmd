@@ -1,0 +1,445 @@
+---
+title: "Advanced statistics for physics analysis - Exercise 8"
+author: "Matteo Bortoletto, matr. 1242935"
+date: "30/05/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Exercise 1
+Students from the Bachelor degree in Physics performed an experiment to study the Zeeman effect. The apparatus contains a Ne source lamp whose position can be changed. During the setting up of the apparatus, the source position has to be adjusted in order to maximize the intensity of the detected light signal. The following table gives the position of the source (in mm) and the corresponding height of the peak (arbitrary units) for the wavelength under study:
+
+$x_i$ = 2.44, 3.49, 3.78, 3.31, 3.18, 3.15, 3.1, 3.0, 3.6, 3.4
+
+$y_i$ = 129, 464, 189, 562, 589, 598, 606, 562, 360, 494
+
+Assume a quadratic dependence of the peak height, $y_i$ as a function of the source position $x_i$,
+
+$$
+f(x)=c_0 + c_1x + c_2x^2
+$$
+
+All the measured values are affected by a Gaussian noise with zero mean, such that
+
+$$
+y_i = f(x_i) + \epsilon
+$$
+
+where $\epsilon$ follows a normal distribution with mean $\mu = 0$ and unknown standard deviation, $\sigma$.
+
+a. Build a Markov Chain Monte Carlo to estimate the best parameters of the quadratic dependence of the data and the noise that affects the measured data.
+
+```{r}
+library(mvtnorm)
+
+# Metropolis (MCMC) algorithm to sample from function func.
+# The first argument of func must be a real vector of parameters, 
+# the initial values of which are provided by the real vector thetaInit.
+# func() returns a two-element vector, the logPrior and logLike 
+# (log base 10), the sum of which is taken to be the log of the density 
+# function (i.e. unnormalized posterior). If you don't have this separation,
+# just set func to return one of them as zero. The MCMC sampling PDF is the 
+# multivariate Gaussian with fixed covariance, sampleCov. A total of 
+# Nburnin+Nsamp samples are drawn, of which the last Nsamp are kept. As the 
+# sampling PDF is symmetric, the Hasting factor cancels, leaving the basic 
+# Metropolis algorithm. Diagnostics are printed very verbose^th sample: 
+# sample number, acceptance rate so far.
+# ... is used to pass data, prior parameters etc. to func().
+# If demo=FALSE (default), then
+# return a Nsamp * (2+Ntheta) matrix (no names), where the columns are
+# 1:  log10 prior PDF
+# 2:  log10 likelihood
+# 3+: Ntheta parameters
+# (The order of the parameters in thetaInit and sampleCov must match.)
+# If demo=TRUE, return the above (funcSamp) as well as thetaPropAll, a 
+# Nsamp * Ntheta matrix of proposed steps, as a two element named list.
+metrop <- function(func, thetaInit, Nburnin, Nsamp, sampleCov, verbose, 
+                   demo=FALSE, ...) {
+
+  Ntheta   <- length(thetaInit)
+  thetaCur <- thetaInit
+  funcCur  <- func(thetaInit, ...) # log10
+  funcSamp <- matrix(data=NA, nrow=Nsamp, ncol=2+Ntheta) 
+  # funcSamp will be filled and returned
+  nAccept  <- 0
+  acceptRate <- 0
+  if(demo) {
+    thetaPropAll <- matrix(data=NA, nrow=Nsamp, ncol=Ntheta)
+  }
+  
+  for(n in 1:(Nburnin+Nsamp)) {
+
+    #cat("cur", funcCur)
+    # Metropolis algorithm. No Hastings factor for symmetric proposal
+    if(is.null(dim(sampleCov))) { # theta and sampleCov are scalars
+      thetaProp <- rnorm(n=1, mean=thetaCur, sd=sqrt(sampleCov))
+    } else {
+      thetaProp <- rmvnorm(n=1, mean=thetaCur, sigma=sampleCov, 
+                           method="eigen")
+    }
+    funcProp  <- func(thetaProp, ...) 
+    #cat("prop", funcProp)
+    logMR <- sum(funcProp) - sum(funcCur) # log10 of the Metropolis ratio
+    #cat(n, thetaCur, funcCur, ":", thetaProp, funcProp, "\n")
+    if(logMR>=0 || logMR>log10(runif(1, min=0, max=1))) {
+      thetaCur   <- thetaProp
+      funcCur    <- funcProp
+      nAccept    <- nAccept + 1
+      acceptRate <- nAccept/n
+    }
+    if(n>Nburnin) {
+      funcSamp[n-Nburnin,1:2] <- funcCur
+      funcSamp[n-Nburnin,3:(2+Ntheta)] <- thetaCur
+      if(demo) {
+        thetaPropAll[n-Nburnin,1:Ntheta] <- thetaProp
+      }
+    }
+
+    # Diagnostics
+    if( is.finite(verbose) && (n%%verbose==0 || n==Nburnin+Nsamp) ) {
+      s1 <- noquote(formatC(n,          format="d", digits=5, flag=""))
+      s2 <- noquote(formatC(Nburnin,    format="g", digits=5, flag=""))
+      s3 <- noquote(formatC(Nsamp,      format="g", digits=5, flag=""))
+      s4 <- noquote(formatC(acceptRate, format="f", digits=4, width=7, 
+                            flag=""))
+      cat(s1, "of", s2, "+", s3, s4, "\n")
+    }
+
+  }
+
+  if(demo) {
+    return(list(funcSamp=funcSamp, thetaPropAll=thetaPropAll))
+  } else {
+    return(funcSamp)
+  }
+ 
+}
+
+##### Functions to provide evaluations of prior, likelihood and posterior for the
+##### quadratic model, plus sampling from the prior
+
+# theta is vector of parameters; obsdata is 2 column dataframe with names [x,y].
+# The priors are hard-wired into the functions.
+
+# Return c(log10(prior), log10(likelihood)) (each generally unnormalized) of the quadratic model
+logpost.quadraticmodel <- function(theta, obsdata) {
+  logprior <- logprior.quadraticmodel(theta)
+  if(is.finite(logprior)) { # only evaluate model if parameters are sensible
+    return( c(logprior, loglike.quadraticmodel(theta, obsdata)) )
+  } else {
+    cat("logprior is not finite!")
+    return( c(-Inf, -Inf) )
+  }
+}
+
+# Return log10(likelihood) for parameters theta and obsdata
+# dnorm(..., log=TRUE) returns log base e, so multiply by 1/ln(10) = 0.4342945
+# to get log base 10
+loglike.quadraticmodel <- function(theta, obsdata) {
+  # convert alpha to b_1 and log10(ysig) to ysig
+  theta[2] <- tan(theta[2])
+  theta[4] <- 10^theta[4]
+  modPred <- drop( theta[1:3] %*% t(cbind(1,obsdata$x,obsdata$x^2)) )
+  # Dimensions in above mixed vector/matrix multiplication: [Ndat] = [P] %*% [P x Ndat] 
+  logLike <- (1/log(10))*sum( dnorm(modPred - obsdata$y, mean=0, sd=theta[4], log=TRUE) )
+  return(logLike)
+}
+
+# Return log10(unnormalized prior)
+logprior.quadraticmodel <- function(theta) {
+  b0Prior      <- dnorm(theta[1], mean=0, sd=10)
+  alphaPrior   <- 1
+  b2Prior      <- dnorm(theta[3], mean=0, sd=5)
+  logysigPrior <- 1 
+  logPrior <- sum( log10(b0Prior), log10(alphaPrior), log10(b2Prior), log10(logysigPrior) )
+  return(logPrior)
+}
+```
+
+```{r}
+##### Bayesian inference of a 4-parameter quadratic model to 2D data
+
+library(gplots) # for plotCI
+
+### Define true model and simulate experimental data from it
+
+set.seed(57)
+Ndat <- 20
+xrange <- c(0,10)
+#x <- sort(runif(n=Ndat, min=xrange[1], max=xrange[2]))
+sigTrue <- 2
+#modMat <- c(-8249, 5684, -913) # 1 x P vector: coefficients, b_p, of polynomial sum_{p=0} b_p*x^p
+modMat <- c(0.69295, -0.48641, -0.76994)
+#y <- cbind(1,x,x^2) %*% as.matrix(modMat) + rnorm(Ndat, 0, sigTrue)
+# Dimensions in matrix multiplication: [Ndat x 1] = [Ndat x P] %*% [P x 1] + [Ndat]
+# cbind does the logical thing combining a scalar and vector; then vector addition
+#y <- drop(y) # converts into a vector
+
+#----------------------------------
+x.in <- c(2.44, 3.49, 3.78, 3.31, 3.18, 3.15, 3.1, 3.0, 3.6, 3.4)
+y.in <- c(129, 464, 189, 562, 589, 598, 606, 562, 360, 494)
+x <- (x.in - mean(x.in))/sd(x.in)
+y <- (y.in - mean(y.in))/sd(y.in)
+#----------------------------------
+
+par(mfrow=c(1,1), mar=c(3.5,3.5,0.5,1), oma=0.1*c(1,1,1,1), mgp=c(2.0,0.8,0), cex=1.0)
+plot(x, y)
+#xsamp <- seq(from=xrange[1], to=xrange[2], length.out=500)
+#ysamp <- cbind(1,xsamp,xsamp^2) %*% as.matrix(modMat)
+#lines(xsamp, drop(ysamp), col="red", lw=2) # true model
+
+# True parameters, transformed to be conformable with model to be used below
+thetaTrue <- c(modMat[1], atan(modMat[2]), modMat[3], log10(sigTrue))
+obsdata <- data.frame(cbind(x,y)) # columns must be named "x" and "y"
+#rm(x,y)
+
+### Define model and infer the posterior PDF over its parameters
+
+# Model to infer: linear regression with Gaussian noise
+# Parameters: intercept b_0, gradient b_1, quadratic term b_2; Gaussian noise sigma, ysig.
+# MCMC works on: theta=c(b_0, alpha=tan(b_1), b_2, log10(ysig)), a 1x4 vector.
+# Prior PDFs:
+# b_0:         N(mean=m, sd=s); m,s estimated from global properties of data
+# alpha:       Uniform (0 to 2pi)
+# b_2:         N(mean=m, sd=s); m,s estimated from global properties of data
+# log10(ysig): Uniform (improper)
+
+# Define covariance matrix of MCMC sampling PDF: sigma=c(b_0, alpha, b_2, log10(ysig))
+sampleCov <- diag(c(0.1, 0.01, 0.01, 0.01)^2)
+# thetaInit <- c(0, 0, 0, log10(1)) # far from a good model
+# Need fewer samples if initialize better: do a least squares fit and
+# set thetaInit to: lsfit$coefficients, sqrt(mean(lsfit$residuals^2))
+#lsfit <- lm(y ~ x + I(x^2), data=obsdata)
+#summary(lsfit)
+#thetaInit <- c(-8000, atan(-4), -900, log10(2.4))
+thetaInit <- c(-1, atan(-0.5), -1, log10(2.4))
+```
+
+```{r}
+# Run the MCMC to find postSamp, samples of the posterior PDF
+set.seed(250)
+allSamp <- metrop(func=logpost.quadraticmodel, thetaInit=thetaInit, Nburnin=2e4, Nsamp=2e5,
+                   sampleCov=sampleCov, verbose=1e3, obsdata=obsdata)
+# 10^(allSamp[,1]+allSamp[,2]) is the unnormalized posterior at each sample
+thinSel  <- seq(from=1, to=nrow(allSamp), by=100) # thin by factor 100
+postSamp <- allSamp[thinSel,]
+```
+
+```{r}
+# Plot MCMC chains and use density estimation to plot 1D posterior PDFs from these.
+# Note that we don't need to do any explicit marginalization to get the 1D PDFs.
+par(mfrow=c(4,2), mar=c(3.0,3.5,0.5,0.5), oma=0.5*c(1,1,1,1), mgp=c(1.8,0.6,0), cex=0.9)
+parnames <- c(expression(b[0]), expression(paste(alpha, " / rad")), expression(b[2]), 
+              expression(paste(log, " ", sigma)))
+for(j in 3:6) { # columns of postSamp
+  plot(1:nrow(postSamp), postSamp[,j], type="l", xlab="iteration", ylab=parnames[j-2])
+  postDen <- density(postSamp[,j], n=2^10)
+  plot(postDen$x, postDen$y, type="l", lwd=1.5, yaxs="i", ylim=1.05*c(0,max(postDen$y)),
+       xlab=parnames[j-2], ylab="density")
+  abline(v=thetaTrue[j-2], lwd=1.5, lty=3)
+}
+
+# Plot all parameter samples in 2D
+par(mfcol=c(3,3), mar=c(3.5,3.5,0.5,0.5), oma=c(0.1,0.1,0.1,0.5), mgp=c(2.0,0.8,0))
+for(i in 1:3) {
+  for(j in 2:4) {
+    if(j<=i) {
+        plot.new()
+      } else {
+        plot(postSamp[,i+2], postSamp[,j+2], xlab=parnames[i], ylab=parnames[j], pch=".")
+    }
+  }
+}
+
+# Find MAP and mean solutions.
+# MAP = Maximum A Posteriori, i.e. peak of posterior.
+# MAP is not the peak in each 1D PDF, but the peak of the 4D PDF.
+# mean is easy, because samples have been drawn from the (unnormalized) posterior.
+posMAP    <- which.max(postSamp[,1]+postSamp[,2]) 
+thetaMAP  <- postSamp[posMAP, 3:6]
+thetaMean <- apply(postSamp[,3:6], 2, mean) # Monte Carlo integration
+
+# Overplot MAP solution with original data
+par(mfrow=c(1,1), mar=c(3.5,3.5,0.5,1), oma=0.1*c(1,1,1,1), mgp=c(2.0,0.8,0), cex=1.0)
+plotCI(obsdata$x, obsdata$y, xlab="x", ylab="y", uiw=10^thetaMAP[4], gap=0)
+xsamp <- seq(from=-3, to=2, length.out=500)
+ysamp <- cbind(1,xsamp,xsamp^2) %*% as.matrix(modMat)
+#lines(xsamp, drop(ysamp), col="red", lwd=2) # true model
+#ysamp <- cbind(1,xsamp,xsamp^2) %*% as.matrix(c(thetaMean[1], tan(thetaMean[2]), thetaMean[3])) 
+#lines(xsamp, drop(ysamp), col="green", lwd=2) # mean model
+ysamp <- cbind(1,xsamp,xsamp^2) %*% as.matrix(c(thetaMAP[1], tan(thetaMAP[2]), thetaMAP[3]))
+lines(xsamp, drop(ysamp), lwd=2) # MAP model
+```
+
+As can be seen from our data, the students forgot to take measurements in the region $x \in (2.44, 3.0)$.
+
+b. Run a Markov Chain Monte Carlo to predict peak height measurements at $x_1 = 2.8$ mm and $x_2 = 2.6$ mm.
+
+```{r}
+#like.quadraticmodel <- function(theta, obsdata) {
+#  # convert alpha to b_1 and log10(ysig) to ysig
+#  theta[2] <- tan(theta[2])
+#  theta[4] <- 10^theta[4]
+#  modPred <- drop(theta[1:3] %*% t(cbind(1,obsdata$x,obsdata$x^2)))
+#  # Dimensions in above mixed vector/matrix multiplication: [Ndat] = [P] %*% [P x Ndat] 
+#  Like <- sum(dnorm(modPred - obsdata$y, mean=0, sd=theta[4]))
+#  return(Like)
+#}
+#
+##sa <- which(postSamp[,2]>=min(x) & chain$func.Samp[,2]<=max(x)) 
+#x <- seq(from=-3, to=3, by = 0.1)
+#y <- like.quadraticmodel(thetaMAP, obsdata)
+#Zfunc <- sum(y)*diff(range(x))/(length(x))
+#
+#hist <- hist(postSamp[,2], 
+#             breaks=seq(from=min(x), to=max(x), length.out=100), 
+#             plot=FALSE)
+#
+#Zhist <- sum(hist$counts)*diff(range(hist$breaks))/(length(hist$counts))
+#lines(hist$breaks, c(hist$counts*Zfunc/Zhist,0), col="navy", type="s", lwd=2, lty=5)
+#lines(x, y, col="firebrick3", lwd=1, lty=1)
+#leg.labels = c(’analytical’, ’MCMC’) leg.ltype = c(1, 5)
+#leg.colors = c(’firebrick3’,’navy’) legend("topleft", inset=.05, bty=’n’,
+#legend = leg.labels, lty=leg.ltype, col=leg.colors, lwd = 2)
+```
+
+
+## Exercise 2
+The number of British coal mine disasters has been recorded from 1851 to 1962. By looking at the data it seems that the number of incidents decreased towards the end of the sampling period. We model the data as follows:
+
+- before some year, we call $\tau$, the data follow a Poisson distribution, where the logarithm of the mean value, $\log \mu_t = b_0$, while for later years, we can model it as $\log \mu_t = b_0 + b_1$;
+- the dependence can be modeled as follows: $y_t \sim \text{Pois}(\mu_t)$, where $\log \mu_t = b_0 + b_1\text{Step}(t - \tau)$;
+- implement the model in `jags`, trying to infer the parameters $b_0$, $b_1$ and $\tau$;
+- the step function is implemented, in BUGS, as step($x$) and returns 1 if $x \ge 0$ and 0 otherwise;
+- assign a uniform prior to $b_0$, $b_1$ and a uniform prior in the interval $(1,N)$, where $N = 112$ is the number of years our data span on;
+- finally, here is our data:
+```
+data <− NULL
+data$D <- c(4,5,4,1,0,4,3,4,0,6,3,3,4,0,2,6,3,3,5,4,5,3,
+            1,4,4,1,5,5,3,4,2,5,2,2,3,4,2,1,3,2,1,1,1,1,
+            1,3,0,0,1,0,1,1,0,0,3,1,0,3,2,2,0,1,1,1,0,1,
+            0,1,0,0,0,2,1,0,0,0,1,1,0,2,2,3,1,1,2,1,1,1,
+            1,2,4,2,0,0,0,1,4,0,0,0,1,0,0,0,0,0,1,0,0,1,0,0)
+data$N <− 112
+```
+- before running jags, assign an initial value to the parameters as follows: $b_0 = 0$, $b_1 = 0$ and $\tau = 50$;
+- explore the features of the chains and try to understand the effects of the burn-in, and thinning;
+```{r}
+library(rjags)
+library(coda)
+
+data<- NULL
+
+data$D <- c(4,5,4,1,0,4,3,4,0,6,3,3,4,0,2,6,3,3,5,4,5,3,
+            1,4,4,1,5,5,3,4,2,5,2,2,3,4,2,1,3,2,1,1,1,1,
+            1,3,0,0,1,0,1,1,0,0,3,1,0,3,2,2,0,1,1,1,0,1,
+            0,1,0,0,0,2,1,0,0,0,1,1,0,2,2,3,1,1,2,1,1,1,
+            1,2,4,2,0,0,0,1,4,0,0,0,1,0,0,0,0,0,1,0,0,1,0,0)
+
+data$N <-112
+
+model<- "model.bug"
+init <- NULL
+init$b0 <- 0
+init$b1 <- 0
+init$tau <- 50
+jm <- jags.model(file = model, data = data, inits = init)
+chain <- coda.samples(jm , c("b0", "b1","tau"), n.iter=10000)
+summary(chain)
+
+plot(chain, col="red3")
+
+chain.df <- as.data.frame(as.mcmc(chain)) 
+cat(sprintf("\n Correlation matrix: \n")) 
+print(cor(chain.df))
+```
+
+```{r, fig.height=7}
+t <- c(5, 10, 20, 40, 80)
+
+for(i in 1:length(t)) {
+    chain <- coda.samples(jm, c("b0", "b1","tau"), n.iter = 10000, thin = t[i])
+    chain.df <- as.data.frame(as.mcmc(chain))
+    
+    b0.chain<-as.mcmc(chain.df["b0"])
+    b1.chain<-as.mcmc(chain.df["b1"])
+    tau.chain<-as.mcmc(chain.df["tau"])
+    
+    my.lags<-seq(0, 30)
+    y1.b0 <- autocorr(b0.chain, lags=my.lags)
+    y1.b1 <- autocorr(b1.chain, lags=my.lags)
+    y1.tau <- autocorr(tau.chain, lags=my.lags)
+    
+    par(mfrow=c(3, 1))
+    
+    plot(my.lags, y1.b0,
+         #ylim=c(0,1),
+         col="red3",
+         xlab="lag", 
+         ylab="ACF", 
+         main=paste("b0, thinning= ",t[i]))
+    
+    plot(my.lags,
+         y1.b1, 
+         #ylim=c(0,1),
+         col="red3",
+         xlab="lag", 
+         ylab="ACF", 
+         main=paste("b1, thinning= ",t[i]))
+
+    plot(my.lags,
+         y1.tau, 
+         #ylim=c(0,1),
+         col="red3",
+         xlab="lag", 
+         ylab="ACF", 
+         main=paste("tau, thinning= ",t[i]))
+    
+    #mtext("My title", side = 3, line = -2, outer = TRUE)
+
+    plot(chain, col="red3")
+}
+```
+
+```{r, fig.height=7}
+burn.in=c(500, 1000, 2000, 4000)
+
+for(i in 1:length(burn.in)) {
+    #jm <- jags.model(model, data, inits = init) # n.adapt = 0? <----------------------
+    chain <- coda.samples(jm, c("b0", "b1","tau"), n.iter = 10000)
+    plot(chain, col="red3")
+    chain.df <- as.data.frame(as.mcmc(chain))
+
+    par(mfrow=c(3,1))
+    
+    plot(chain.df$b0, 
+         chain.df$b1, 
+         xlab="b0", 
+         ylab="b1", 
+         main="b1 vs b0", 
+         col="red3")
+    
+    plot(chain.df$b0,
+         chain.df$tau,
+         xlab="b0", 
+         ylab="tau",
+         main="tau vs b0",
+         col="red3")
+    
+    plot(chain.df$b1, 
+         chain.df$tau,
+         xlab="b1", 
+         ylab="tau", 
+         main="tau vs b1",
+         col="red3")
+}
+```
+
+- plot the posterior distributions of the parameters and extract their mean values, and 95.
+
+```{r}
+
+```
