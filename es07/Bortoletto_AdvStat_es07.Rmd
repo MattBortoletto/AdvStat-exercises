@@ -25,19 +25,13 @@ s.known <- 4
 N <- 15
 data <- c(26.8, 26.3, 28.3, 28.5, 16.3, 31.9, 28.5, 27.2, 20.9, 27.5, 28.0, 18.6, 22.3, 25.0, 31.5)
 m.data <- mean(data)
-#cat("Mean of the data = ", m.data, "\n")
 s.prior <- 5
 m.prior <- 20
 s.post <- s.known*s.prior/(sqrt(s.known^2+N*s.prior^2))
-#m.post <- (1/s.prior^2)*m.prior/(1/s.known^2 + 1/s.prior^2) + (N/s.known^2)*m.data/(N/s.known^2 + 1/s.prior^2)
-#s.post <- sqrt((1/s.prior))
 m.post <- (s.post^2)*(m.prior/s.prior^2 + m.data*N/s.known^2)
 
 mu <- seq(1, 60, 0.1)
 post <- dnorm(mu, m.post, s.post)
-
-#cat("Posterior mean =", m.post, "\n")
-#cat("Posterior standard deviation =", s.post)
 ```
 The mean of the posterior is $\bar{\mu} = `r m.post`$ and the standard deviation is $\sigma_{post} = `r s.post`$.
 
@@ -46,7 +40,6 @@ b. Find the 95% credibility interval for $\mu$.
 ```{r}
 mu1 <- mu[which.min(abs(0.025-cumsum(post)*0.1))]
 mu2 <- mu[which.min(abs(0.975-cumsum(post)*0.1))]
-#cat("The 95% credibility interval is given by [1, x2] = [", mu1, ",", mu2, "]")
 ```
 The 95% credibility interval is given by $[\mu_1,\mu_2] = [`r mu1`, `r mu2`]$.
 
@@ -89,22 +82,24 @@ m.prior <- 30
 
 prior.new <- dnorm(mu, m.prior, s.prior)
 
-likelihood <- Vectorize(function(mu, s) {
-  l <- 1/(sqrt(2*pi)*s)*exp(-(sum(data-mu)^2)/(2*s^2))
-  return(l)
-})
+likelihood <- rep(1, length(mu))
+for(x in data) {
+  for(u in seq(0, length(mu))) {
+    likelihood[u] <- likelihood[u]*dnorm(x, mu[u], 4) 
+  }
+  likelihood <- likelihood/sum(likelihood)
+}
+
+likelihood.norm <- likelihood/(sum(likelihood)*0.1)
 
 s.post <- s.known*s.prior/(sqrt(s.known^2+N*s.prior^2))
-#m.post <- (1/s.prior^2)*m.prior/(1/s.known^2 + 1/s.prior^2) + (N/s.known^2)*m.data/(N/s.known^2 + 1/s.prior^2)
 m.post <- (s.post^2)*(m.prior/s.prior^2 + m.data*N/s.known^2)
-
-likelihood.norm <- likelihood(mu, s.known)/(sum(likelihood(mu, s.known))*0.1)
 
 post.new <- dnorm(mu, m.post, s.post)/sum(dnorm(mu, m.post, s.post)*0.1)
 
-#post.new1 <- prior.new*likelihood(x, s.known)/(sum(prior.new*likelihood(x, s.known))*0.1)
+cat(sum(post.new)*0.1)
 
-plot(mu, likelihood.norm,
+plot(mu, post.new,
      xlim = c(20,40),
      type = "l",
      lwd = 1.5,
@@ -118,12 +113,15 @@ lines(mu, prior.new,
       type = "l",
       col = "coral2")
 
-lines(mu, post.new,
+lines(mu, likelihood.norm,
       lwd = 1.5,
       type = "l",
       col = "palegreen4")
 
-legend("topright", c("Likelihood", "Prior", "Posterior"), col = c("royalblue", "coral2", "palegreen4"), lwd = 3)
+legend("topright", 
+       c("Posterior", "Prior", "Likelihood"), 
+       col = c("royalblue", "coral2", "palegreen4"), 
+       lwd = 3)
 ```
 
 e. Compare the credibility intervals obtained with the two priors.
@@ -131,7 +129,6 @@ e. Compare the credibility intervals obtained with the two priors.
 ```{r}
 mu1.new <- mu[which.min(abs(0.025-cumsum(post.new)*0.1))]
 mu2.new <- mu[which.min(abs(0.975-cumsum(post.new)*0.1))]
-#cat("The 95% credibility interval is given by [x1, x2] = [", mu1.new, ",", mu2.new, "]")
 ```
 The 95% credibility interval is given by $[\mu_1,\mu_2] = [`r mu1.new`, `r mu2.new`]$.
 
@@ -169,23 +166,21 @@ prior <- function(mu) {
 
 mu <- seq(0,10,0.01)
 
-#like <- dnorm(mu, mean = mean(data), sd = s.known)/sum(dnorm(mu, mean = mean(data), sd = s.known)*0.01)
+likelihood <- rep(1, length(mu))
+for(x in data) {
+  for(u in seq(0, length(mu))) {
+    likelihood[u] <- likelihood[u]*dnorm(x, mu[u], 2) 
+  }
+  likelihood <- likelihood/sum(likelihood)
+}
 
-likelihood <- Vectorize(function(mu, s) {
-  l <- 1/(sqrt(2*pi)*s)*exp(-(sum(data-mu)^2)/(2*s^2))
-  return(l)
-})
+likelihood.norm <- likelihood/(sum(likelihood)*0.01)
 
-likelihood.norm <- likelihood(mu, s.known)/(sum(likelihood(mu, s.known))*0.01)
 post.star <- likelihood.norm*prior(mu)
 post.norm <- post.star/(sum(post.star)*0.01)
 
-#mu.max <- mu[which.max(post.norm)]
 mu.max <- sum(post.norm*mu*0.01)
 post.std <- sqrt(sum(post.norm*0.01*mu^2)-mu.max^2)
-
-#cat("The maximum of the posterior is:", mu.max, "\n")
-#cat("The posterior standard deviation is:", post.std)
 ```
 The posterior mean is $\bar{\mu} = `r mu.max`$ and the standard deviation is $\sigma_{post} = `r post.std`$.
 
@@ -194,7 +189,6 @@ b. Find the 95% credibility interval for $\mu$.
 ```{r}
 mu1 <- mu[which.min(abs(0.025-cumsum(post.norm)*0.01))]
 mu2 <- mu[which.min(abs(0.975-cumsum(post.norm)*0.01))]
-#cat("The 95% credibility interval is given by [mu1, mu2] = [", mu1, ",", mu2, "]")
 ```
 The 95% credibility interval is given by $[\mu_1,\mu_2] = [`r mu1`, `r mu2`]$.
 
@@ -207,8 +201,6 @@ options(repr.plot.width=12, repr.plot.height=10)
 plot(mu, post.norm, 
      type='l', 
      lwd=1.5, 
-     xlim = c(4,5.5),
-     ylim = c(0,4),
      col = "royalblue4",
      xlab = TeX("$\\mu$"),
      ylab = TeX("P($\\mu$ | y_1,...,y_{16})"),
@@ -223,12 +215,12 @@ polygon(x=x, y=y, col='royalblue', density = 10)
 abline(v=mu.max, col="grey40", lty=2)
 abline(v=mu1, col="grey40", lty=2)
 abline(v=mu2, col="grey40", lty=2)
-text(mu.max, par("usr")[4] + 0.15, labels = TeX("$\\bar{\\mu}$"), cex = 1.2, col="black", xpd=TRUE)
-text(mu1, par("usr")[4] + 0.15, labels = TeX("$\\mu_{2.5%}$"), cex = 1.2, col="black", xpd=TRUE)
-text(mu2, par("usr")[4] + 0.15, labels = TeX("$\\mu_{97.5%}$"), cex = 1.2, col="black", xpd=TRUE)
+text(mu.max, par("usr")[4] + 0.03, labels = TeX("$\\bar{\\mu}$"), cex = 1.2, col="black", xpd=TRUE)
+text(mu1, par("usr")[4] + 0.03, labels = TeX("$\\mu_{2.5%}$"), cex = 1.2, col="black", xpd=TRUE)
+text(mu2, par("usr")[4] + 0.03, labels = TeX("$\\mu_{97.5%}$"), cex = 1.2, col="black", xpd=TRUE)
 
-text(5.4, 3.8, paste("mean =", round(mu.max, 0)))
-text(5.4, 3.4, paste("std =", round(post.std, 1)))
+text(9.5, 0.8, paste("mean =", round(mu.max, 1)))
+text(9.5, 0.72, paste("std =", round(post.std, 1)))
 ```
 
 d. Plot, on the same graph, the prior, the likelihood and the posterior distribution.
@@ -236,8 +228,7 @@ d. Plot, on the same graph, the prior, the likelihood and the posterior distribu
 ```{r}
 plot(mu, post.norm,
      type = "l",
-     lty = 3,
-     lwd = 3,
+     lwd = 1.5,
      col = "royalblue",
      xlab = TeX("$\\mu$"),
      ylab = "P",
@@ -246,18 +237,18 @@ plot(mu, post.norm,
 lines(mu, prior(mu)/15, # normalization
       type = "l",
       lwd = 1.5,
-      col = "coral2")
+      col = "darkolivegreen3")
 
 lines(mu, likelihood.norm,
       type = "l",
       lwd = 1.5,
-      col = "darkolivegreen3")
+      col = "coral2")
 
 legend("topright", 
        c("Posterior", "Prior", "Likelihood"), 
        lwd = 3, 
-       col = c("royalblue", "coral2", "darkolivegreen3"),
-       lty = c(3, 1, 1))
+       col = c("royalblue", "darkolivegreen3", "coral2"),
+       lty = c(1, 1, 1))
 ```
 
 
@@ -272,11 +263,10 @@ a. Find the frequentist estimator for $p$.
 n <- 116
 y <- 11
 p.freq <- 11/116
-#cat("The frequentist estimator is p =", p.freq)
 ```
 The frequentist estimator for $p$ is $\hat{p} = `r p.freq`$.
 
-b. Using a Beta$(1,10)$ prior for $p$, calculate and plot posterior distribution $P(p|y)$.
+b. Using a $\text{Beta}(1,10)$ prior for $p$, calculate and plot posterior distribution $P(p|y)$.
 
 ```{r}
 alpha <- 1
@@ -305,15 +295,11 @@ c. Find the bayesian estimator for $p$, the posterior mean and variance, and a 9
 
 ```{r}
 post.mean <- (alpha + y)/(alpha + beta + n)
-#post.m <- sum(p*post.norm)/n.sample
-post.var <- (1/(n+2)^2)*n*post.mean*(1-post.mean)
+post.var <- (alpha + y)*(beta + n - y)/((alpha + beta + n + 1)*(alpha + beta + n)^2)
 p1 <- p[which.min(abs(0.025-cumsum(post.norm)*delta))]
 p2 <- p[which.min(abs(0.975-cumsum(post.norm)*delta))]
-#cat("The bayesian estimator is the posterior mean:", post.mean, "\n")
-#cat("The variance is:", post.var)
-#cat("The 95% credibility interval is given by [p1, p2] = [", p1, ",", p2, "]")
 ```
-The bayesian estimator is the posterior mean, $\bar{p} = `r post.mean`$ and the variance is Var $ = `r post.var`$. 
+The bayesian estimator is the posterior mean, $\bar{p} = `r post.mean`$ and the variance is Var $= `r post.var`$. 
 The 95% credible interval is given by $[p_1,p_2] = [`r p1`, `r p2`]$.
 
 d. test the hypothesis $H_0 : p = 0.1$ versus $H_1 : p \ne 0.1$ at 5% level of significance with both the frequentist and bayesian approaches.
@@ -342,11 +328,10 @@ p.value <- sum(sampling.distr[11:n])
 # bayesian approach
 p1 <- p[which.min(abs(0.025-cumsum(post.norm)*delta))]
 p2 <- p[which.min(abs(0.975-cumsum(post.norm)*delta))]
-#cat("The 95% credibility interval is given by [p1, p2] = [", p1, ",", p2, "]")
 ```
-*Frequentist approach*: since p-value = `r p.value` > $\alpha$, we do not reject the null hypothesis.
+*Frequentist approach*: since p-value $= `r p.value` > \alpha$, we do not reject the null hypothesis at 5% level of significance.
 
-*Bayesian approach*: since $\alpha$ lies inside the credible interval for $p$, we do not reject the null hypothesis.
+*Bayesian approach*: since $p_0 = 0.1$ lies inside the credible interval for $p$, we do not reject the null hypothesis at 5% level of significance.
 
 A new measurement, performed one month later on $n = 165$ water samples, gives $y = 9$ high bacter X level.
 
@@ -356,7 +341,6 @@ e. Find the frequentist estimator for $p$.
 n <- 165
 y <- 9
 p.freq <- y/n
-#cat("The frequentist estimator is p =", p.freq)
 ```
 The frequentist estimator for $p$ is $\hat{p} = `r p.freq`$.
 
@@ -390,11 +374,14 @@ post.new.star <- post.norm*likelihood
 post.new.norm <- post.new.star/(sum(post.new.star)*delta)
 
 lines(p, post.new.norm, 
-     type = "l",
-     lwd = 1.5,
-     col = "coral2")
+      type = "l",
+      lwd = 1.5,
+      col = "coral2")
 
-legend("topright", c("prior = Beta(1,10)", "prior = previous posterior"), lwd = 3, col = c("royalblue", "coral2"))
+legend("topright", 
+       c("prior = Beta(1,10)", "prior = previous posterior"), 
+       lwd = 3, 
+       col = c("royalblue", "coral2"))
 ```
 
 g. Find the bayesian estimator for $p$, the posterior mean and variance, and a 95% credible interval.
@@ -402,29 +389,22 @@ g. Find the bayesian estimator for $p$, the posterior mean and variance, and a 9
 ```{r}
 # -- beta
 b.post.mean <- (alpha + y)/(alpha + beta + n)
-#post.m <- sum(p*post.norm)/n.sample
-b.post.var <- (1/(n+2)^2)*n*b.post.mean*(1-b.post.mean)
-#cat("Bayesian estimator with beta prior:", b.post.mean, "\n")
-#cat("Variance with beta prior:", b.post.var, "\n")
+b.post.var <- (alpha + y)*(beta + n - y)/((alpha + beta + n + 1)*(alpha + beta + n)^2)
 
 b.p1 <- p[which.min(abs(0.025-cumsum(b.post.norm)*delta))]
 b.p2 <- p[which.min(abs(0.975-cumsum(b.post.norm)*delta))]
-#cat("The 95% credibility interval is given by [p1, p2] = [", b.p1, ",", b.p2, "] \n")
 
 # -- prior = previous posterior
 p.post.mean <- sum(post.new.norm*p*delta)
 #p.post.max <- p[which.max(post.new.norm)]
 p.post.var <- sum(post.new.norm*delta*p^2)-p.post.mean^2
-#cat("Bayesian estimator with the previous posterior as prior:", b.post.mean, "\n")
-#cat("Variance with the previous posterior as prior:", b.post.var)
 
 p.p1 <- p[which.min(abs(0.025-cumsum(post.new.norm)*delta))]
 p.p2 <- p[which.min(abs(0.975-cumsum(post.new.norm)*delta))]
-#cat("The 95% credibility interval is given by [p1, p2] = [", p.p1, ",", p.p2, "]")
 ```
-*Beta prior* The bayesian estimator is the posterior mean, $\bar{p} = `r b.post.mean`$ and the variance is Var $ = `r b.post.var`$. The 95% credible interval is given by $[p_1,p_2] = [`r b.p1`, `r b.p2`]$.
+**Beta prior**. The bayesian estimator is the posterior mean, $\bar{p} = `r b.post.mean`$ and the variance is Var $= `r b.post.var`$. The 95% credible interval is given by $[p_1,p_2] = [`r b.p1`, `r b.p2`]$.
 
-*Previous posterior as prior* The bayesian estimator is the posterior mean, $\bar{p} = `r p.post.mean`$ and the variance is Var $ = `r p.post.var`$. The 95% credible interval is given by $[p_1,p_2] = [`r p.p1`, `r p.p2`]$.
+**Previous posterior as prior**. The bayesian estimator is the posterior mean, $\bar{p} = `r p.post.mean`$ and the variance is Var $= `r p.post.var`$. The 95% credible interval is given by $[p_1,p_2] = [`r p.p1`, `r p.p2`]$.
 
 h. test the hypothesis $H_0 : p = 0.1$ versus $H_1 : p \ne 0.1$ at 5% level of significance with both the frequentist and bayesian approaches.
 
@@ -451,13 +431,17 @@ p.value <- sum(sampling.distr[9:n])
 # bayesian approach
 b.p1 <- p[which.min(abs(0.025-cumsum(b.post.norm)*delta))]
 b.p2 <- p[which.min(abs(0.975-cumsum(b.post.norm)*delta))]
-#cat("The 95% credibility interval is given by [p1, p2] = [", b.p1, ",", b.p2, "] \n")
 
 # bayesian approach
 p.p1 <- p[which.min(abs(0.025-cumsum(post.new.norm)*delta))]
 p.p2 <- p[which.min(abs(0.975-cumsum(post.new.norm)*delta))]
-#cat("The 95% credibility interval is given by [p1, p2] = [", p.p1, ",", p.p2, "]")
 ```
-*Frequentist approach*: since p-value = `r p.value` > $\alpha$, we do not reject the null hypothesis.
+**Frequentist approach** 
 
-*Bayesian approach*: since $\alpha$ lies inside the credible interval for $p$, we do not reject the null hypothesis.
+Since p-value $= `r p.value` > \alpha$, we do not reject the null hypothesis.
+
+**Bayesian approach**
+
+*Beta prior*: since $p_0 = 0.1$ does not lie inside the credible interval for $p$, $[p_1,p_2] = [`r b.p1`, `r b.p2`]$, we reject the null hypothesis at 5% level of significance.
+
+*Previous posterior as prior*: since $p_0 = 0.1$ lies inside the credible interval for $p$, $[p_1,p_2] = [`r p.p1`, `r p.p2`]$, we do not reject the null hypothesis at 5% level of significance.
