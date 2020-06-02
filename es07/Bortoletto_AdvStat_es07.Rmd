@@ -64,14 +64,33 @@ plot(mu, post,
 text(30, 0.38, paste("mean =", round(m.post,0)))
 text(30, 0.34, paste("std =", round(s.post,1)))
 abline(v = m.post, lty = 2, col = "royalblue3")
-polygon(x=x, y=y, col='royalblue', pch=1, density = 10)
+polygon(x=x, y=y, col='royalblue', density = 10)
 
-abline(v=m.post, col="royalblue", lty=2, pch=1)
-abline(v=mu1, col="royalblue", lty=2, pch=1)
-abline(v=mu2, col="royalblue", lty=2, pch=1)
-text(m.post, par("usr")[4] + 0.035, labels = TeX("$\\bar{\\mu}$"), pos = 1, cex = 1.2, col="black", xpd=TRUE)
-text(mu1, par("usr")[4] + 0.035, labels = TeX("$\\mu_{2.5%}$"), pos = 1, cex = 1.2, col="black", xpd=TRUE)
-text(mu2, par("usr")[4] + 0.035, labels = TeX("$\\mu_{97.5%}$"), pos = 1, cex = 1.2, col="black", xpd=TRUE)
+abline(v=m.post, col="coral2", lty=2)
+abline(v=mu1, col="royalblue", lty=2)
+abline(v=mu2, col="royalblue", lty=2)
+abline(v=m.post+s.post, col="seagreen", lty=2)
+abline(v=m.post-s.post, col="seagreen", lty=2)
+text(m.post, 
+     par("usr")[4] + 0.035, 
+     labels = TeX("$\\bar{\\mu}$"), 
+     pos = 1, cex = 1, col="coral2", xpd=TRUE)
+text(m.post+s.post, 
+     par("usr")[4] + 0.035, 
+     labels="std", 
+     pos=1, cex=1, col="seagreen", xpd=TRUE)
+text(m.post-s.post, 
+     par("usr")[4] + 0.035, 
+     labels="std", 
+     pos=1, cex=1, col="seagreen", xpd=TRUE)
+text(mu1, 
+     par("usr")[4] + 0.035, 
+     labels=TeX("$\\mu_{2.5%}$"), 
+     pos = 1, cex = 1, col="royalblue", xpd=TRUE)
+text(mu2, 
+     par("usr")[4] + 0.035, 
+     labels=TeX("$\\mu_{97.5%}$"), 
+     pos = 1, cex = 1, col="royalblue", xpd=TRUE)
 ```
 
 d. repeat the analysis using a different prior $\mathcal{N}(m=30, s^2=16)$ and plot, on the same graph the likelihood, the prior and the posterior.
@@ -96,8 +115,6 @@ s.post <- s.known*s.prior/(sqrt(s.known^2+N*s.prior^2))
 m.post <- (s.post^2)*(m.prior/s.prior^2 + m.data*N/s.known^2)
 
 post.new <- dnorm(mu, m.post, s.post)/sum(dnorm(mu, m.post, s.post)*0.1)
-
-cat(sum(post.new)*0.1)
 
 plot(mu, post.new,
      xlim = c(20,40),
@@ -179,10 +196,10 @@ likelihood.norm <- likelihood/(sum(likelihood)*0.01)
 post.star <- likelihood.norm*prior(mu)
 post.norm <- post.star/(sum(post.star)*0.01)
 
-mu.max <- sum(post.norm*mu*0.01)
-post.std <- sqrt(sum(post.norm*0.01*mu^2)-mu.max^2)
+mu.mean <- sum(post.norm*mu*0.01)
+post.std <- sqrt(sum(post.norm*0.01*mu^2)-mu.mean^2)
 ```
-The posterior mean is $\bar{\mu} = `r mu.max`$ and the standard deviation is $\sigma_{post} = `r post.std`$.
+The posterior mean is $\bar{\mu} = `r mu.mean`$ and the standard deviation is $\sigma_{post} = `r post.std`$.
 
 b. Find the 95% credibility interval for $\mu$.
 
@@ -212,15 +229,31 @@ dens.between = post.norm[mu>=mu1 & mu<=mu2]
 y <- c(0, dens.between, 0)
 polygon(x=x, y=y, col='royalblue', density = 10)
 
-abline(v=mu.max, col="grey40", lty=2)
-abline(v=mu1, col="grey40", lty=2)
-abline(v=mu2, col="grey40", lty=2)
-text(mu.max, par("usr")[4] + 0.03, labels = TeX("$\\bar{\\mu}$"), cex = 1.2, col="black", xpd=TRUE)
-text(mu1, par("usr")[4] + 0.03, labels = TeX("$\\mu_{2.5%}$"), cex = 1.2, col="black", xpd=TRUE)
-text(mu2, par("usr")[4] + 0.03, labels = TeX("$\\mu_{97.5%}$"), cex = 1.2, col="black", xpd=TRUE)
-
-text(9.5, 0.8, paste("mean =", round(mu.max, 1)))
-text(9.5, 0.72, paste("std =", round(post.std, 1)))
+abline(v=mu.mean, col="coral2", lty=2)
+abline(v=mu1, col="royalblue", lty=2)
+abline(v=mu2, col="royalblue", lty=2)
+abline(v=mu.mean+post.std, col="seagreen", lty=2)
+abline(v=mu.mean-post.std, col="seagreen", lty=2)
+text(mu.mean, 
+     par("usr")[4] + 0.08, 
+     labels = TeX("$\\bar{\\mu}$"), 
+     pos = 1, cex = 1, col="coral2", xpd=TRUE)
+text(mu.mean+post.std+0.1, 
+     0.78, 
+     labels="std", 
+     pos=1, cex=1, col="seagreen", xpd=TRUE, srt=90)
+text(mu.mean-post.std-0.3, 
+     0.78, 
+     labels="std", 
+     pos=1, cex=1, col="seagreen", xpd=TRUE, srt=90)
+text(mu1, 
+     par("usr")[4] + 0.08, 
+     labels=TeX("$\\mu_{2.5%}$"), 
+     pos = 1, cex = 1, col="royalblue", xpd=TRUE)
+text(mu2, 
+     par("usr")[4] + 0.08, 
+     labels=TeX("$\\mu_{97.5%}$"), 
+     pos = 1, cex = 1, col="royalblue", xpd=TRUE)
 ```
 
 d. Plot, on the same graph, the prior, the likelihood and the posterior distribution.
@@ -288,7 +321,7 @@ plot(p, post.norm,
      col = "royalblue",
      ylab = "P(p|y)",
      xlab = "p",
-     main = "Posterior distribution")
+     main = "Posterior distribution for Beta(1,10) prior")
 ```
 
 c. Find the bayesian estimator for $p$, the posterior mean and variance, and a 95% credible interval.
@@ -305,23 +338,26 @@ The 95% credible interval is given by $[p_1,p_2] = [`r p1`, `r p2`]$.
 d. test the hypothesis $H_0 : p = 0.1$ versus $H_1 : p \ne 0.1$ at 5% level of significance with both the frequentist and bayesian approaches.
 
 ```{r}
+library(latex2exp)
 # frequentist approach
 p0 <- 0.1
 y.samples <- 0:n
 sampling.distr <- dbinom(y.samples, n, p0)
 
-plot(y.samples-0.5, sampling.distr, 
-     type = "s",
-     col = "royalblue",
-     xlab = "y",
-     ylab = "P",
-     main = "Hypothesis test - Frequentist approach")
+barplot(sampling.distr, 
+        names = y.samples,
+        xlim = c(0,30),
+        col = ifelse(y.samples == y, "seagreen", "royalblue"),
+        density = 50,
+        xlab = "y",
+        ylab = "P(y|n,p)",
+        main = "Hypothesis test - Frequentist approach")
 
 abline(h = 0.05,
        col = "coral2",
        lty = 2)
 
-text(x = 100, y = 0.055, TeX("$\\alpha = 0.05$"), col = "coral2")
+text(x = 28, y = 0.055, TeX("$\\alpha = 0.05$"), col = "coral2")
 
 p.value <- sum(sampling.distr[11:n])
 
@@ -409,24 +445,28 @@ p.p2 <- p[which.min(abs(0.975-cumsum(post.new.norm)*delta))]
 h. test the hypothesis $H_0 : p = 0.1$ versus $H_1 : p \ne 0.1$ at 5% level of significance with both the frequentist and bayesian approaches.
 
 ```{r}
+library(latex2exp)
+# frequentist approach
 p0 <- 0.1
 y.samples <- 0:n
 sampling.distr <- dbinom(y.samples, n, p0)
 
-plot(y.samples-0.5, sampling.distr, 
-     type = "s",
-     col = "royalblue",
-     xlab = "y",
-     ylab = "P",
-     main = "Hypothesis test - Frequentist approach")
+barplot(sampling.distr, 
+        names = y.samples,
+        xlim = c(0,34.5),
+        col = ifelse(y.samples == y, "seagreen", "royalblue"),
+        density = 50,
+        xlab = "y",
+        ylab = "P(y|n,p)",
+        main = "Hypothesis test - Frequentist approach")
 
 abline(h = 0.05,
        col = "coral2",
        lty = 2)
 
-text(x = 150, y = 0.055, TeX("$\\alpha = 0.05$"), col = "coral2")
+text(x = 33, y = 0.055, TeX("$\\alpha = 0.05$"), col = "coral2")
 
-p.value <- sum(sampling.distr[9:n])
+p.value <-  dbinom(y, n, p0)
 
 # bayesian approach
 b.p1 <- p[which.min(abs(0.025-cumsum(b.post.norm)*delta))]
@@ -438,7 +478,7 @@ p.p2 <- p[which.min(abs(0.975-cumsum(post.new.norm)*delta))]
 ```
 **Frequentist approach** 
 
-Since p-value $= `r p.value` > \alpha$, we do not reject the null hypothesis.
+Since p-value $= `r p.value` < \alpha$, we reject the null hypothesis.
 
 **Bayesian approach**
 
