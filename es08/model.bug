@@ -6,8 +6,8 @@ model{
     y[t] ~ dpois(mu[t])
     }
 
-    b0 ~ dnorm(0,1)
-    b1 ~ dnorm(0,1)
+    b0 ~ dunif(-10,10)
+    b1 ~ dunif(-10,10)
     tau ~ dunif(1, N)
 
 }
