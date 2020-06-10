@@ -327,13 +327,13 @@ data$D <- c(4,5,4,1,0,4,3,4,0,6,3,3,4,0,2,6,3,3,5,4,5,3,
 
 data$N <- 112
 
-model<- "model.bug"
-init <- NULL
-init$b0 <- 0
-init$b1 <- 0
-init$tau <- 50
-jm <- jags.model(file = model, data = data, inits = init)
-chain <- coda.samples(jm , c("b0", "b1","tau"), n.iter=10000)
+model <- "model.bug"
+parameters <- NULL
+parameters$b0 <- 0
+parameters$b1 <- 0
+parameters$tau <- 50
+jm <- jags.model(file = model, data = data, inits = parameters)
+chain <- coda.samples(jm , c("b0", "b1", "tau"), n.iter=10000)
 summary(chain)
 
 plot(chain, col="red3")
@@ -347,7 +347,8 @@ print(cor(chain.df))
 t <- c(5, 10, 20, 40, 80)
 
 for(i in 1:length(t)) {
-    chain <- coda.samples(jm, c("b0", "b1","tau"), n.iter = 10000, thin = t[i])
+    cat("Thinning =", t[i])
+    chain <- coda.samples(jm, c("b0", "b1", "tau"), n.iter = 10000, thin = t[i])
     chain.df <- as.data.frame(as.mcmc(chain))
     
     b0.chain<-as.mcmc(chain.df["b0"])
@@ -365,21 +366,19 @@ for(i in 1:length(t)) {
          col="red3",
          xlab="lag", 
          ylab="ACF", 
-         main=paste("b0, thinning= ",t[i]))
+         main=paste("b0 - thinning = ", t[i]))
     
     plot(my.lags, y1.b1, 
          col="red3",
          xlab="lag", 
          ylab="ACF", 
-         main=paste("b1, thinning= ",t[i]))
+         main=paste("b1 - thinning = ", t[i]))
 
     plot(my.lags, y1.tau, 
          col="red3",
          xlab="lag", 
          ylab="ACF", 
-         main=paste("tau, thinning= ",t[i]))
-    
-    #mtext("My title", side = 3, line = -2, outer = TRUE)
+         main=paste("tau - thinning = ", t[i]))
 
     plot(chain, col="red3")
     
@@ -388,35 +387,42 @@ for(i in 1:length(t)) {
 ```
 
 ```{r}
-burn.in=c(500, 1000, 2000, 4000)
+burn.in=c(10, 100, 200, 500, 1000, 2000, 4000)
 
 for(i in 1:length(burn.in)) {
-    chain <- coda.samples(jm, c("b0", "b1","tau"), n.iter = 10000)
+    jm <- jags.model(model, data, parameters, n.adapt = burn.in[i])
+    chain <- coda.samples(jm, c("b0", "b1", "tau"), n.iter = 10000)
     
-    par(mfrow=c(1,1), fin=c(2,2))
-    plot(chain, col="red3")
+    cat("Burn-in = ", burn.in[i])
+    
+    par(mfrow=c(1, 1), fin=c(2, 2))
+    
+    plot(chain, col = "red3")
+    
     chain.df <- as.data.frame(as.mcmc(chain))
 
-    par(mfrow=c(3,1), fin=c(4,4))
+    par(mfrow=c(3, 1), fin=c(4, 4))
     
     plot(chain.df$b0, chain.df$b1, 
-         xlab="b0", 
-         ylab="b1", 
-         main="b1 vs b0", 
-         col="red3")
+         xlab = "b0", 
+         ylab = "b1", 
+         main = paste("b1 vs b0 - Burn-in =", burn.in[i]), 
+         col = "red3")
     
     plot(chain.df$b0, chain.df$tau,
-         xlab="b0", 
-         ylab="tau",
-         main="tau vs b0",
-         col="red3")
+         xlab = "b0", 
+         ylab = "tau",
+         main = paste("tau vs b0 - Burn-in =", burn.in[i]),
+         col = "red3")
     
     plot(chain.df$b1, chain.df$tau,
-         xlab="b1", 
-         ylab="tau", 
-         main="tau vs b1",
-         col="red3")
+         xlab = "b1", 
+         ylab = "tau", 
+         main = paste("tau vs b1 - Burn-in =", burn.in[i]),
+         col = "red3")
     
     print(summary(chain))
 }
 ```
+
+Using different thinnings and burn-in we don't see any important change in the results. Thus in this case it is more convenient to use a low thinning and a low burn-in (in order to get more samples).
